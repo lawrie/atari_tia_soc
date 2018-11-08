@@ -62,4 +62,6 @@ void lcd_draw_char(int16_t x, int16_t y, unsigned char c, uint16_t color, uint16
 
 void lcd_draw_text(int16_t x, int16_t y, const char *text, uint16_t c, uint16_t bc);
 
+void lcd_push_pixel(uint16_t color);
+
 #endif

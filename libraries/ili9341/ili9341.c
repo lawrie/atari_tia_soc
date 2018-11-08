@@ -126,3 +126,8 @@ void lcd_draw_text(int16_t x, int16_t y, const char *text, uint16_t c, uint16_t 
     for(int i=0;text[i];i++) lcd_draw_char(x + i*6, y,text[i], c, bc);
 }
 
+void lcd_push_pixel(uint16_t color) {
+    lcd_send_data(color >> 8);
+    lcd_send_data(color);
+}
+
