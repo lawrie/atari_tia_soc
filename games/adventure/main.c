@@ -65,13 +65,13 @@ uint32_t below_yellow[] = {
 };
 
 uint32_t below_yellow_flip[] = {
-       0xFFFFF,          //XXXXXXXXXXXXXXXXXXRRRRRRRRRRRRRRRRRRRRRR
+       0xFFFF0,          //XXXXXXXXXXXXXXXXXXRRRRRRRRRRRRRRRRRRRRRR
        0x00000,
        0x00000,
        0x00000,
        0x00000,
        0x00000,
-       0xFFFF0           //XXXXXXXXXXXXXXXXX       RRRRRRRRRRRRRRRR
+       0xFFFFF           //XXXXXXXXXXXXXXXXXXXXRRRRRRRRRRRRRRRRRRRR
 };
 
 uint32_t top_entry[] = {
@@ -105,13 +105,13 @@ uint32_t two_exit[] = {
 };
 
 uint32_t left_of_name[] = {
-       0xFFFF0,          //XXXXXXXXXXXXXXXX        RRRRRRRRRRRRRRRR
+       0xFFFFF,          //XXXXXXXXXXXXXXXXXXXXRRRRRRRRRRRRRRRRRRRR
        0x00000, 
        0x00000, 
        0x00000, 
        0x00000, 
        0x00000, 
-       0xFFFFF           //XXXXXXXXXXXXXXXXXXRRRRRRRRRRRRRRRRRRRRRR
+       0xFFFF0           //XXXXXXXXXXXXXXXX        RRRRRRRRRRRRRRRR
 };
 
 uint32_t white_castle_entry[] = {
@@ -167,7 +167,7 @@ uint32_t blue_maze_center[] = {
 uint32_t blue_maze_entry[] = {
        0xFF333,          //XXXXXXXX  XX  XX  XXRR  RR  RR  RRRRRRRR
        0x03330,          //      XX  XX  XX        RR  RR  RR
-       0xF033F,          //XXXX  XX  XX  XXXXXXRRRRRR  RR  RR  RRRR
+       0xF333F,          //XXXX  XX  XX  XXXXXXRRRRRR  RR  RR  RRRR
        0x03300,          //      XX  XX                RR  RR
        0xFF3FF,          //XXXXXXXX  XXXXXXXXXXRRRRRRRRRR  RRRRRRRR
        0x00000,          //
@@ -279,40 +279,41 @@ typedef struct Rooms {
   uint8_t color;
   uint8_t pf_control;
   uint8_t above, left, down, right;
+  bool port_open;
 } Rooms;
 
 Rooms rooms[] = {
-  {number_room,        1, 0x00, 0x00, 0x00, 0x00, 0x00}, // 00 Number room
-  {below_yellow_flip,  2, 0x02, 0x08, 0x02, 0x1D, 0x1E}, // 01 
-  {below_yellow,       8, 0x00, 0x11, 0x03, 0x00, 0x01}, // 02
-  {left_of_name,       4, 0x01, 0x08, 0x00, 0x00, 0x02}, // 03 
-  {blue_maze_top,      5, 0x00, 0x10, 0x05, 0x07, 0x06}, // 04 Top of Blue Maze
-  {blue_maze_1,        5, 0x00, 0x1D, 0x06, 0x08, 0x04}, // 05 Blue Maze #1
-  {blue_maze_bottom,   5, 0x00, 0x07, 0x04, 0x03, 0x05}, // 06 Bottom of Blue Maze
-  {blue_maze_center,   5, 0x00, 0x04, 0x08, 0x06, 0x08}, // 07 Center of Blue Maze
-  {blue_maze_entry,    5, 0x00, 0x05, 0x07, 0x01, 0x07}, // 08 Blue Maze Entry
-  {maze_middle,        2, 0x00, 0x0A, 0x0A, 0x0B, 0x0A}, // 09 Maze Middle
-  {maze_entry,         2, 0x00, 0x03, 0x09, 0x09, 0x09}, // 0A Maze Entry
-  {maze_side,          2, 0x00, 0x09, 0x0C, 0x1C, 0x0D}, // 0B Maze Side
-  {side_corridor,      2, 0x00, 0x1C, 0x0C, 0x1D, 0x0B}, // 0C
-  {side_corridor,      2, 0x00, 0x0F, 0x0B, 0x0E, 0x0C}, // 0D
-  {top_entry,          2, 0x00, 0x0D, 0x10, 0x0F, 0x10}, // 0E
-  {castle,             7, 0x00, 0x0E, 0x0F, 0x0D, 0x0F}, // OF White Castle
-  {castle,             6, 0x00, 0x01, 0x1C, 0x04, 0x1C}, // 10 Black Castle
-  {castle,             2, 0x00, 0x06, 0x03, 0x02, 0x01}, // 11 Yellow Castle
-  {number_room,        2, 0x00, 0x12, 0x12, 0x12, 0x12}, // 12 Yellow Castle Entry
-  {black_maze_1,       6, 0x00, 0x15, 0x14, 0x15, 0x16}, // 13 Black Maze #1
-  {black_maze_2,       2, 0x00, 0x16, 0x15, 0x16, 0x13}, // 14 Black Maze #2
-  {black_maze_3,       2, 0x00, 0x13, 0x16, 0x13, 0x14}, // 15 Black Maze #3
-  {black_maze_entry,   2, 0x00, 0x14, 0x13, 0x1B, 0x15}, // 16 Black Maze Entry
-  {red_maze_1,         2, 0x00, 0x19, 0x16, 0x19, 0x18}, // 17 Red Maze #1
-  {red_maze_top,       2, 0x00, 0x1A, 0x17, 0x1A, 0x17}, // 18 Top of Red Maze
-  {red_maze_bottom,    2, 0x00, 0x17, 0x1A, 0x17, 0x1A}, // 19 Bottom of Red Maze
-  {white_castle_entry, 2, 0x00, 0x18, 0x19, 0x18, 0x19}, // 1A White Castle Entry
-  {two_exit,           2, 0x00, 0x89, 0x89, 0x89, 0x89}, // 1B Black Castle Entry
-  {number_room,        0, 0x00, 0x1D, 0x07, 0x8c, 0x08}, // 1C Other Purple Room
-  {top_entry,          3, 0x00, 0x01, 0x01, 0x10, 0x03}, // 1D 
-  {below_yellow,       2, 0x00, 0x06, 0x01, 0x06, 0x03}  // 1E Name Room
+  {number_room,        1, 0x00, 0x00, 0x00, 0x00, 0x00, false}, // 00 Number room
+  {below_yellow_flip,  8, 0x00, 0x08, 0x02, 0x00, 0x02, false}, // 01 
+  {below_yellow,       4, 0x00, 0x11, 0x01, 0x00, 0x03, false}, // 02
+  {left_of_name,       2, 0x02, 0x00, 0x02, 0x1D, 0x1E, false}, // 03 
+  {blue_maze_top,      5, 0x00, 0x10, 0x05, 0x07, 0x05, false}, // 04 Top of Blue Maze
+  {blue_maze_1,        5, 0x00, 0x1D, 0x04, 0x08, 0x06, false}, // 05 Blue Maze #1
+  {blue_maze_bottom,   5, 0x00, 0x07, 0x05, 0x03, 0x05, false}, // 06 Bottom of Blue Maze
+  {blue_maze_center,   5, 0x00, 0x04, 0x08, 0x06, 0x08, false}, // 07 Center of Blue Maze
+  {blue_maze_entry,    5, 0x00, 0x05, 0x07, 0x01, 0x07, false}, // 08 Blue Maze Entry
+  {maze_middle,        2, 0x00, 0x0A, 0x0A, 0x0B, 0x0A, false}, // 09 Maze Middle
+  {maze_entry,         2, 0x00, 0x03, 0x09, 0x09, 0x09, false}, // 0A Maze Entry
+  {maze_side,          2, 0x00, 0x09, 0x0C, 0x1C, 0x0D, false}, // 0B Maze Side
+  {side_corridor,      2, 0x00, 0x1C, 0x0C, 0x1D, 0x0B, false}, // 0C
+  {side_corridor,      2, 0x00, 0x0F, 0x0B, 0x0E, 0x0C, false}, // 0D
+  {top_entry,          2, 0x00, 0x0D, 0x10, 0x0F, 0x10, false}, // 0E
+  {castle,             7, 0x00, 0x0E, 0x0F, 0x0D, 0x0F, false}, // OF White Castle
+  {castle,             6, 0x00, 0x1B, 0x1C, 0x04, 0x1C, false}, // 10 Black Castle
+  {castle,             2, 0x00, 0x12, 0x00, 0x02, 0x00, false}, // 11 Yellow Castle
+  {number_room,        2, 0x00, 0x12, 0x12, 0x11, 0x12, false}, // 12 Yellow Castle Entry
+  {black_maze_1,       6, 0x00, 0x15, 0x14, 0x15, 0x16, false}, // 13 Black Maze #1
+  {black_maze_2,       2, 0x00, 0x16, 0x15, 0x16, 0x13, false}, // 14 Black Maze #2
+  {black_maze_3,       2, 0x00, 0x13, 0x16, 0x13, 0x14, false}, // 15 Black Maze #3
+  {black_maze_entry,   2, 0x00, 0x1B, 0x13, 0x10, 0x15, false}, // 16 Black Maze Entry
+  {red_maze_1,         2, 0x00, 0x19, 0x16, 0x19, 0x18, false}, // 17 Red Maze #1
+  {red_maze_top,       2, 0x00, 0x1A, 0x17, 0x1A, 0x17, false}, // 18 Top of Red Maze
+  {red_maze_bottom,    2, 0x00, 0x17, 0x1A, 0x17, 0x1A, false}, // 19 Bottom of Red Maze
+  {white_castle_entry, 3, 0x00, 0x18, 0x19, 0x18, 0x19, false}, // 1A White Castle Entry
+  {two_exit,           3, 0x00, 0x1C, 0x89, 0x10, 0x89, false}, // 1B Black Castle Entry
+  {number_room,        1, 0x00, 0x1D, 0x07, 0x1B, 0x08, false}, // 1C Other Purple Room
+  {top_entry,          3, 0x00, 0x03, 0x00, 0x00, 0x00, false}, // 1D 
+  {below_yellow,       2, 0x00, 0x06, 0x01, 0x06, 0x03, false}  // 1E Name Room
 };
 
 uint8_t drag0[] = {
@@ -478,11 +479,17 @@ uint8_t one[] = {
        0x00
 };
 
+#define IN_ROOM 0
+#define CARRIED 1
+
 typedef struct ObjectLocations {
   uint8_t *data;
   uint8_t room;
   uint8_t x;
   uint8_t y;
+  uint8_t w;
+  uint8_t h;
+  uint8_t state;
   uint8_t color;
 } ObjectLocations;
 
@@ -501,17 +508,17 @@ typedef struct ObjectLocations {
 #define BLACK_KEY 10
 
 ObjectLocations locations[] = {
-  {dot,     0x15, 0x51, 0x12, 6}, // Black dot
-  {drag0,   0x0E, 0x50, 0x20, 3}, // Red dragon
-  {drag0,   0x09, 0x50, 0x20, 2}, // Yellow dragon
-  {drag0,   0x1D, 0x50, 0x50, 4}, // Green dragon
-  {magnet,  0x1B, 0x80, 0x20, 6}, // Magnet
-  {sword,   0x12, 0x20, 0x20, 2}, // Sword
-  {chalice, 0x1C, 0x30, 0x20, 2}, // Chalice
-  {bridge,  0x04, 0x29, 0x37, 1}, // Bridge
-  {key,     0x11, 0x20, 0x50, 2}, // Yellow key
-  {key,     0x0E, 0x20, 0x40, 7}, // White key
-  {key,     0x1D, 0x20, 0x20, 6}  // Black key
+  {dot,     0x15, 0x51, 0x12, 1,  1,  0, 6},   // Black dot
+  {drag0,   0x09, 0x50, 0x20, 8,  8,  0, 3},   // Red dragon
+  {drag0,   0x01, 0x50, 0x20, 8,  8,  0, 2},   // Yellow dragon
+  {drag0,   0x1D, 0x50, 0x50, 8,  8,  0, 4},   // Green dragon
+  {magnet,  0x1B, 0x80, 0x20, 8,  4,  0, 6},   // Magnet
+  {sword,   0x12, 0x20, 0x60, 8,  4,  0, 2},   // Sword
+  {chalice, 0x1C, 0x30, 0x20, 8,  4,  0, 2},   // Chalice
+  {bridge,  0x04, 0x29, 0x67, 16, 16, 0, 1},   // Bridge
+  {key,     0x11, 0x20, 0x50, 8,  4,  0, 2},   // Yellow key
+  {key,     0x0E, 0x20, 0x40, 8,  4,  0, 7},   // White key
+  {key,     0x1D, 0x20, 0x20, 8,  4,  0, 6}    // Black key
 };
  
 uint8_t ball_x, ball_y;
@@ -519,6 +526,8 @@ bool started = false;
 uint8_t current_room = 0;
 uint8_t old_ball_x, old_ball_y;
 uint8_t key_x, key_y;
+int8_t carried = -1;
+int8_t carried_x, carried_y;
 
 void draw_room(int r) {
   for(int y=0; y<7; y++) {
@@ -546,31 +555,38 @@ void draw_ball(uint8_t x, uint8_t y, uint16_t c) {
       lcd_draw_pixel((x << 1) + i , Y_OFFSET + y + j, c);
 }
 
-void draw_object(uint8_t x, uint8_t y, uint16_t oc, uint16_t bc, const uint8_t *d) {
+void draw_object(uint8_t x, uint8_t y, uint16_t oc, const uint8_t *d, bool big) {
+  uint8_t shift = (big ? 3 : 1);
   while(*d) {
     uint8_t c = *d;
     for(int i=0;i<8;i++) {
-      lcd_draw_pixel(x + i<<1, Y_OFFSET + y, c & 0x80 ? oc : bc);
-      lcd_draw_pixel(x + 1 + i<<1, Y_OFFSET + y, c & 0x80 ? oc : bc);
-      lcd_draw_pixel(x + i<<1, Y_OFFSET + y + 1, c & 0x80 ? oc : bc);
-      lcd_draw_pixel(x + 1 + i<<1, Y_OFFSET + y + 1, c & 0x80 ? oc : bc);
+      for(int j=0;j<(big ? 8 : 2);j++) 
+        for(int k=0; k<(big ? 2 : 1) && y + k  < 192;k++) 
+          if (c & 0x80) lcd_draw_pixel((x<<1) + (i<<shift) + j, Y_OFFSET + y + k, oc);
       c <<= 1;
     }
     d++;
-    y+= 2;
+    y += (big ? 2 : 1);;
   }
 }
 
 void draw_objects() {
   for(int i=0; i<NUM_OBJECTS;i++) 
-    if (current_room == locations[i].room && locations[i].data != NULL)
+    if (current_room == locations[i].room && locations[i].state == IN_ROOM)
       draw_object(locations[i].x, locations[i].y, colors[locations[i].color],
-                  back_color, locations[i].data);
+                  locations[i].data, i == BRIDGE);
 }
 
 void draw_portcullis(int n) {
   for(int i=0;i<n;i++)
-    draw_object(76, Y_OFFSET + 88 + (i<<1), 0, back_color, portcullis); 
+    draw_object(76, Y_OFFSET + 88 + (i<<1), 0, portcullis, false); 
+}
+
+void open_portcullis() {
+  for(int i=15; i>=0; i--) {
+    draw_object(76, Y_OFFSET + 88 + (i<<1), back_color, portcullis, false); 
+    delay(50);
+  }
 }
 
 uint32_t get_wall(uint8_t y) {
@@ -671,6 +687,18 @@ bool touched_object(uint8_t x, uint8_t y, int w, int h) {
          touched(ball_x, ball_y + 8, x, y, w, h) ||
          touched(ball_x + 4, ball_y + 8, x, y, w, h);
 }
+
+int8_t check_objects() {
+  for(int i=0;i<NUM_OBJECTS;i++) {
+    if (locations[i].room == current_room && locations[i].state == IN_ROOM) {
+      if (touched_object(locations[i].x, locations[i].y, 
+                         locations[i].w, locations[i].h)) {
+        return i;
+      }
+    }
+  }
+  return -1;
+}
   
 void main() {
   reg_uart_clkdiv = 139;
@@ -681,8 +709,8 @@ void main() {
 
   back_color = colors[0];
 
-  ball_x = 80;
-  ball_y = 160;
+  ball_x = 78;
+  ball_y = 148;
 
   key_x = 0x20;
   key_y = 0x50;
@@ -690,10 +718,22 @@ void main() {
   uint8_t buttons = 0, old_buttons;
   uint8_t old_room;
 
+  // Start in number room. Only level 1 currently available.
   draw_room(0);
-  draw_object(76, 96, colors[4], back_color, one);
+  draw_object(76, 96, colors[4], one, false);
 
   while(true) {
+
+    // See if we have won
+    if (current_room == 0x12 && carried == CHALICE) {
+      while(true) {
+        for(int i=i;i<=8;i++) {
+          rooms[current_room].color = i;
+          draw_room(current_room);
+        }
+      }
+    }
+
     old_buttons = buttons;
     buttons = reg_buttons;
 
@@ -702,6 +742,7 @@ void main() {
     old_ball_x = ball_x;
     old_ball_y = ball_y;
 
+    // Check for game started
     if ((buttons & BUTTON_X) && !(old_buttons & BUTTON_X)) {
       if (!started) {
         started = true;
@@ -711,6 +752,7 @@ void main() {
 
     if (!started) continue;
 
+    // Movement and collisions
     if ((buttons & BUTTON_UP) && !check_collision(UP)) {
       if (ball_y >= 2) ball_y--;
       else {
@@ -728,7 +770,8 @@ void main() {
         uint8_t down = rooms[current_room].down;
         if (down > 0 && down <= 30) { 
            current_room = down;
-           ball_y = 0; 
+           if (current_room == 0x10 || current_room == 0x11) ball_y = 160;
+           else ball_y = 0; 
         }
       }
     } 
@@ -755,12 +798,65 @@ void main() {
       }
     }
 
-    if (current_room == 0x11) {
-      if (touched_object(key_x, key_y, 16, 8)) {
-        draw_object(key_x, key_y, colors[3], back_color, key);
+    // Drop object
+    if ((buttons & BUTTON_A) && carried >= 0) {
+      locations[carried].state = IN_ROOM;
+      locations[carried].room = current_room;
+      locations[carried].x = ball_x + carried_x;
+      locations[carried].y = ball_y + carried_y;
+      carried = -1;
+    }
+
+    // Check for pick-up of object
+    int8_t obj = check_objects();
+
+    if (obj >= 0) {
+      // Check for kiling dragon
+      if (obj == GREEN_DRAGON || obj == RED_DRAGON) {
+        if (carried == SWORD) locations[obj].data = drag2;
+      } else { 
+        // Drop any existing object
+        if (carried >= 0) {
+          locations[carried].state = IN_ROOM;
+          locations[carried].state = IN_ROOM;
+          locations[carried].room = current_room;
+          locations[carried].x = ball_x + carried_x;
+          locations[carried].y = ball_y + carried_y;
+        }
+
+        // Pick up new object 
+        carried = obj;
+        draw_object(locations[carried].x, locations[carried].y, back_color,
+                    locations[carried].data, false);
+        carried_x = 0;
+        carried_y = 8;
+        locations[obj].state = CARRIED;
       }
     }
-  
+
+    // Open portcullis if carrying the key
+    if (current_room == 0x10 || current_room == 0x11) { // castle
+      if (touched_object(76, 112, 16, 32)) {
+        if (rooms[current_room].port_open) {
+          current_room = rooms[current_room].above;
+          ball_y = 190;
+        } else if ((current_room == 0x10 && carried == BLACK_KEY) ||
+            (current_room == 0x11 && carried == YELLOW_KEY)) {
+          if (!rooms[current_room].port_open) {
+            open_portcullis();
+            rooms[current_room].port_open = true;
+          }
+          current_room = rooms[current_room].above;
+          ball_y = 190;
+        } else {
+          // No entry
+          ball_x = old_ball_x;
+          ball_y = old_ball_y;
+        }
+      }
+    }
+ 
+    // Check for new room 
     if (current_room != old_room) {
       draw_room(current_room);
       room_color = colors[rooms[current_room].color];
@@ -771,15 +867,25 @@ void main() {
 
       draw_objects();
 
-      if (current_room == 0x11) {
-        //draw_object(key_x, key_y, room_color, back_color, key);
+      if (current_room >= 0xF && current_room <= 0x11) { // Is it a castle
         draw_portcullis(16);
       }
     }
 
+    // Redraw stuff when ball moves
     if (ball_x != old_ball_x || ball_y != old_ball_y) {
-      draw_ball(old_ball_x, old_ball_y, back_color);
+      if (current_room == old_room) {
+        draw_ball(old_ball_x, old_ball_y, back_color);
+        if (carried >= 0)
+          draw_object(old_ball_x + carried_x, old_ball_y + carried_y, back_color,
+                      locations[carried].data, false);
+      }
+
       draw_ball(ball_x, ball_y, room_color);
+
+      if (carried >= 0) 
+        draw_object(ball_x + carried_x, ball_y + carried_y, 
+                    colors[locations[carried].color], locations[carried].data, false);
     }
   }
 }
