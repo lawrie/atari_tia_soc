@@ -7,8 +7,10 @@
 
 #define reg_uart_clkdiv (*(volatile uint32_t*)0x02000004)
 #define reg_buttons (*(volatile uint32_t*)0x03000004)
-
 #define reg_uart_data (*(volatile uint32_t*)0x02000008)
+
+#define SCREEN_WIDTH 160
+#define SCREEN_HEIGHT 192
 
 #define Y_OFFSET 24
 
@@ -17,8 +19,7 @@
 #define LEFT 2
 #define RIGHT 3
 
-#define NULL (void *)0
-
+// Colours
 const uint16_t colors[] = {
                      0xBDB6, // Grey
                      0xB216, // Purple
@@ -31,8 +32,7 @@ const uint16_t colors[] = {
                      0x3F4C  // Light Green
 };
 
-uint16_t room_color, back_color;
-
+// Room data
 uint32_t number_room[] = {
 
        0xFFFFF,          //XXXXXXXXXXXXXXXXXXXXRRRRRRRRRRRRRRRRRRRR
@@ -174,106 +174,44 @@ uint32_t blue_maze_entry[] = {
        0xFFFF0           //XXXXXXXXXXXXXXXX        RRRRRRRRRRRRRRRR
 };
 
+// Unused rooms in level 1
 uint32_t black_maze_1[] = {
-       0xFFFFF,          //XXXXXXXXXXXXXXXXXXRRRRRRRRRRRRRRRRRRRRRR
-       0x00000, 
-       0x00000, 
-       0x00000, 
-       0x00000, 
-       0x00000, 
-       0xFFFFF           //XXXXXXXXXXXXXXXXXXRRRRRRRRRRRRRRRRRRRRRR
 };
 
 uint32_t black_maze_2[] = {
-       0xFFFFF,          //XXXXXXXXXXXXXXXXXXRRRRRRRRRRRRRRRRRRRRRR
-       0x00000, 
-       0x00000, 
-       0x00000, 
-       0x00000, 
-       0x00000, 
-       0xFFFFF           //XXXXXXXXXXXXXXXXXXRRRRRRRRRRRRRRRRRRRRRR
 };
 
 uint32_t black_maze_3[] = {
-       0xFFFFF,          //XXXXXXXXXXXXXXXXXXRRRRRRRRRRRRRRRRRRRRRR
-       0x00000, 
-       0x00000, 
-       0x00000, 
-       0x00000, 
-       0x00000, 
-       0xFFFFF           //XXXXXXXXXXXXXXXXXXRRRRRRRRRRRRRRRRRRRRRR
 };
 
 uint32_t black_maze_entry[] = {
-       0xFFFFF,          //XXXXXXXXXXXXXXXXXXRRRRRRRRRRRRRRRRRRRRRR
-       0x00000, 
-       0x00000, 
-       0x00000, 
-       0x00000, 
-       0x00000, 
-       0xFFFFF           //XXXXXXXXXXXXXXXXXXRRRRRRRRRRRRRRRRRRRRRR
 };
 
 uint32_t maze_middle[] = {
-       0xFFFFF,          //XXXXXXXXXXXXXXXXXXRRRRRRRRRRRRRRRRRRRRRR
-       0x00000, 
-       0x00000, 
-       0x00000, 
-       0x00000, 
-       0x00000, 
-       0xFFFFF           //XXXXXXXXXXXXXXXXXXRRRRRRRRRRRRRRRRRRRRRR
 };
 
 uint32_t maze_entry[] = {
-       0xFFFFF,          //XXXXXXXXXXXXXXXXXXRRRRRRRRRRRRRRRRRRRRRR
-       0x00000, 
-       0x00000, 
-       0x00000, 
-       0x00000, 
-       0x00000, 
-       0xFFFFF           //XXXXXXXXXXXXXXXXXXRRRRRRRRRRRRRRRRRRRRRR
 };
 
 uint32_t maze_side[] = {
-       0xFFFFF,          //XXXXXXXXXXXXXXXXXXRRRRRRRRRRRRRRRRRRRRRR
-       0x00000, 
-       0x00000, 
-       0x00000, 
-       0x00000, 
-       0x00000, 
-       0xFFFFF           //XXXXXXXXXXXXXXXXXXRRRRRRRRRRRRRRRRRRRRRR
 };
 
 uint32_t red_maze_1[] = {
-       0xFFFFF,          //XXXXXXXXXXXXXXXXXXRRRRRRRRRRRRRRRRRRRRRR
-       0x00000, 
-       0x00000, 
-       0x00000, 
-       0x00000, 
-       0x00000, 
-       0xFFFFF           //XXXXXXXXXXXXXXXXXXRRRRRRRRRRRRRRRRRRRRRR
 };
 
 uint32_t red_maze_top[] = {
-       0xFFFFF,          //XXXXXXXXXXXXXXXXXXRRRRRRRRRRRRRRRRRRRRRR
-       0x00000, 
-       0x00000, 
-       0x00000, 
-       0x00000, 
-       0x00000, 
-       0xFFFFF           //XXXXXXXXXXXXXXXXXXRRRRRRRRRRRRRRRRRRRRRR
 };
 
 uint32_t red_maze_bottom[] = {
-       0xFFFFF,          //XXXXXXXXXXXXXXXXXXRRRRRRRRRRRRRRRRRRRRRR
-       0x00000, 
-       0x00000, 
-       0x00000, 
-       0x00000, 
-       0x00000, 
-       0xFFFFF           //XXXXXXXXXXXXXXXXXXRRRRRRRRRRRRRRRRRRRRRR
 };
 
+// Room numbers
+#define BLACK_CASTLE 0x10
+#define YELLOW_CASTLE 0x11
+#define YELLOW_CASTLE_ENTRY 0x12
+#define GREEN_DRAGON_ROOM 0x1D
+
+// Room table
 typedef struct Rooms {
   uint32_t *data;
   uint8_t color;
@@ -284,9 +222,9 @@ typedef struct Rooms {
 
 Rooms rooms[] = {
   {number_room,        1, 0x00, 0x00, 0x00, 0x00, 0x00, false}, // 00 Number room
-  {below_yellow_flip,  8, 0x00, 0x08, 0x02, 0x00, 0x02, false}, // 01 
-  {below_yellow,       4, 0x00, 0x11, 0x01, 0x00, 0x03, false}, // 02
-  {left_of_name,       2, 0x02, 0x00, 0x02, 0x1D, 0x1E, false}, // 03 
+  {below_yellow_flip,  8, 0x01, 0x08, 0x02, 0x00, 0x02, false}, // 01 Under Blue Maze
+  {below_yellow,       4, 0x00, 0x11, 0x01, 0x00, 0x03, false}, // 02 Under Yellow Castle
+  {left_of_name,       2, 0x02, 0x00, 0x02, 0x1D, 0x1E, false}, // 03 Left of Name
   {blue_maze_top,      5, 0x00, 0x10, 0x05, 0x07, 0x05, false}, // 04 Top of Blue Maze
   {blue_maze_1,        5, 0x00, 0x1D, 0x04, 0x08, 0x06, false}, // 05 Blue Maze #1
   {blue_maze_bottom,   5, 0x00, 0x07, 0x05, 0x03, 0x05, false}, // 06 Bottom of Blue Maze
@@ -312,10 +250,11 @@ Rooms rooms[] = {
   {white_castle_entry, 3, 0x00, 0x18, 0x19, 0x18, 0x19, false}, // 1A White Castle Entry
   {two_exit,           3, 0x00, 0x1C, 0x89, 0x10, 0x89, false}, // 1B Black Castle Entry
   {number_room,        1, 0x00, 0x1D, 0x07, 0x1B, 0x08, false}, // 1C Other Purple Room
-  {top_entry,          3, 0x00, 0x03, 0x00, 0x00, 0x00, false}, // 1D 
+  {top_entry,          3, 0x00, 0x03, 0x00, 0x00, 0x00, false}, // 1D Green dragon room
   {below_yellow,       2, 0x00, 0x06, 0x01, 0x06, 0x03, false}  // 1E Name Room
 };
 
+// Object data
 uint8_t drag0[] = {
        0x06,                  //     XX
        0x0F,                  //    XXXX
@@ -479,22 +418,14 @@ uint8_t one[] = {
        0x00
 };
 
+// Object states
 #define IN_ROOM 0
 #define CARRIED 1
-
-typedef struct ObjectLocations {
-  uint8_t *data;
-  uint8_t room;
-  uint8_t x;
-  uint8_t y;
-  uint8_t w;
-  uint8_t h;
-  uint8_t state;
-  uint8_t color;
-} ObjectLocations;
+#define DEAD 2
 
 #define NUM_OBJECTS 11
 
+// Object indices
 #define BLACK_DOT 0
 #define RED_DRAGON 1
 #define YELLOW_DRAGON 2
@@ -507,11 +438,23 @@ typedef struct ObjectLocations {
 #define WHITE_KEY 9
 #define BLACK_KEY 10
 
+// Object table
+typedef struct ObjectLocations {
+  uint8_t *data;
+  uint8_t room;
+  uint8_t x;
+  uint8_t y;
+  uint8_t w;
+  uint8_t h;
+  uint8_t state;
+  uint8_t color;
+} ObjectLocations;
+
 ObjectLocations locations[] = {
   {dot,     0x15, 0x51, 0x12, 1,  1,  0, 6},   // Black dot
-  {drag0,   0x09, 0x50, 0x20, 8,  8,  0, 3},   // Red dragon
-  {drag0,   0x01, 0x50, 0x20, 8,  8,  0, 2},   // Yellow dragon
-  {drag0,   0x1D, 0x50, 0x50, 8,  8,  0, 4},   // Green dragon
+  {drag0,   0x09, 0x50, 0x20, 8,  16, 0, 3},   // Red dragon
+  {drag0,   0x01, 0x50, 0x20, 8,  16, 0, 2},   // Yellow dragon
+  {drag0,   0x1D, 0x50, 0x50, 8,  16, 0, 4},   // Green dragon
   {magnet,  0x1B, 0x80, 0x20, 8,  4,  0, 6},   // Magnet
   {sword,   0x12, 0x20, 0x60, 8,  4,  0, 2},   // Sword
   {chalice, 0x1C, 0x30, 0x20, 8,  4,  0, 2},   // Chalice
@@ -520,22 +463,32 @@ ObjectLocations locations[] = {
   {key,     0x0E, 0x20, 0x40, 8,  4,  0, 7},   // White key
   {key,     0x1D, 0x20, 0x20, 8,  4,  0, 6}    // Black key
 };
- 
+
+// Working data 
 uint8_t ball_x, ball_y;
 bool started = false;
 uint8_t current_room = 0;
 uint8_t old_ball_x, old_ball_y;
-uint8_t key_x, key_y;
 int8_t carried = -1;
 int8_t carried_x, carried_y;
+uint16_t room_color, back_color;
 
+// Get pixel corresponding to room co-ordinates - not yet used
+uint8_t get_pixel(uint8_t r, uint8_t x, uint8_t y) {
+  return ((rooms[r].data[y < 16 ? 0 : 1 + (y >> 5)] & 
+          (0x80000 >> ((x >= 80 ? x : 159 -x) >> 2))) ? 1 : 0);  
+}
+
+// Draw room
 void draw_room(int r) {
+  Rooms room = rooms[r];
+
   for(int y=0; y<7; y++) {
     uint32_t bit = 0x80000;
-    uint32_t pf = rooms[r].data[y];
+    uint32_t pf = room.data[y];
     for(int x=0; x<20; x++) {
-      for(int i = 0; i< ((y == 0 || y == 6) ? 16 : 32);i++) {
-        uint16_t c = colors[rooms[r].color];
+      for(int i=0; i<((y == 0 || y == 6) ? 16 : 32);i++) {
+        uint16_t c = colors[room.color];
         int yy =  Y_OFFSET + (y == 0 ? i : 16 + i + ((y-1) * 32));
         uint16_t cc = pf & bit ? c : back_color;
         for(int j=0; j<8; j++) {
@@ -549,12 +502,14 @@ void draw_room(int r) {
   }
 }
 
+// Draw player (ball)
 void draw_ball(uint8_t x, uint8_t y, uint16_t c) {
   for(int i=0; i<8; i++) 
     for(int j=0;j<8 && y + j < 192;j++) 
       lcd_draw_pixel((x << 1) + i , Y_OFFSET + y + j, c);
 }
 
+// Draw object
 void draw_object(uint8_t x, uint8_t y, uint16_t oc, const uint8_t *d, bool big) {
   uint8_t shift = (big ? 3 : 1);
   while(*d) {
@@ -570,18 +525,24 @@ void draw_object(uint8_t x, uint8_t y, uint16_t oc, const uint8_t *d, bool big) 
   }
 }
 
+// Draw all objects in current room
 void draw_objects() {
-  for(int i=0; i<NUM_OBJECTS;i++) 
-    if (current_room == locations[i].room && locations[i].state == IN_ROOM)
-      draw_object(locations[i].x, locations[i].y, colors[locations[i].color],
-                  locations[i].data, i == BRIDGE);
+  for(int i=0; i<NUM_OBJECTS;i++) {
+    ObjectLocations loc = locations[i];
+
+    if (current_room == loc.room && loc.state != CARRIED)
+      draw_object(loc.x, loc.y, colors[loc.color],
+                  loc.data, i == BRIDGE);
+  }
 }
 
+// Draw rung of portcullis
 void draw_portcullis(int n) {
   for(int i=0;i<n;i++)
     draw_object(76, Y_OFFSET + 88 + (i<<1), 0, portcullis, false); 
 }
 
+// Animate opening of portcullis
 void open_portcullis() {
   for(int i=15; i>=0; i--) {
     draw_object(76, Y_OFFSET + 88 + (i<<1), back_color, portcullis, false); 
@@ -589,43 +550,34 @@ void open_portcullis() {
   }
 }
 
+// Get 20-bit wall data for given row
 uint32_t get_wall(uint8_t y) {
   uint32_t *data = rooms[current_room].data;
 
   if (y < 16) return data[0];
   else return data[((y-16) >> 5) + 1];
 }
-  
+ 
+// Check for collisions with walls 
 bool check_collision(uint8_t direction) {
   uint32_t wall, wall1;
+  Rooms room = rooms[current_room];
 
   switch (direction) {
     case UP:
-      wall = get_wall(ball_y - 1);
-      if (ball_x < 80) {
-        uint32_t mask = 1 << ((79 - ball_x) >> 2);
-        for(int i=0;i<2; i++) {
-          if (wall & mask) return true;
-          mask >>= 1;
-        } 
-      } else {
-        uint32_t mask = 1 <<  ((ball_x - 78) >> 2);
-        for(int i=0;i<2; i++) {
-          if (wall & mask) return true;
-          mask >>= 1;
-        }
-      } 
-      break;
     case DOWN:
-      wall = get_wall(ball_y + 8);
-      if (ball_x < 80) {
-        uint32_t mask = 1 << ((79 - ball_x) >> 2);
+      wall = get_wall(ball_y + (direction == UP ? -1 : 8));
+    
+      if (ball_x < (SCREEN_WIDTH / 2) ) {
+        uint32_t mask = 1 << (((SCREEN_WIDTH / 2) - 1 - ball_x) >> 2);
+
         for(int i=0;i<2; i++) {
           if (wall & mask) return true;
           mask >>= 1;
         } 
       } else {
-        uint32_t mask = 1 <<  ((ball_x - 78) >> 2);
+        uint32_t mask = 1 <<  ((ball_x - (SCREEN_WIDTH / 2) + 3) >> 2);
+
         for(int i=0;i<2; i++) {
           if (wall & mask) return true;
           mask >>= 1;
@@ -633,35 +585,27 @@ bool check_collision(uint8_t direction) {
       } 
       break;
     case LEFT:
-      if ((rooms[current_room].pf_control & 1) && ball_x == 16) return true;
-      wall = get_wall(ball_y);
-      wall1 = get_wall(ball_y + 1);
-      if (ball_x < 80) {
-        uint32_t mask = 1 << ((80 - ball_x) >> 2);
-        for(int i=0;i<2; i++) {
-          if (wall & mask) return true;
-          wall = wall1;
-        } 
-      } else {
-        uint32_t mask = 1 <<  ((ball_x - 81) >> 2);
-        for(int i=0;i<2; i++) {
-          if (wall & mask) return true;
-          wall = wall1;
-        }
-      } 
-      break;
+      // Check for thin wall
+      if ((room.pf_control & 1) && ball_x == 16) return true;
+    
     case RIGHT:
-      if ((rooms[current_room].pf_control & 2) && ball_x == 138) return true;
+      // Check for thin wall
+      if (direction == RIGHT && 
+          ((room.pf_control & 2) && ball_x == 138)) return true;
+      
       wall = get_wall(ball_y);
       wall1 = get_wall(ball_y + 1);
-      if (ball_x < 80) {
-        uint32_t mask = 1 << ((75 - ball_x) >> 2);
+
+      if (ball_x < (SCREEN_WIDTH / 2)) {
+        uint32_t mask = 1 << (((direction == LEFT ? 80 : 75) - ball_x) >> 2);
+
         for(int i=0;i<2; i++) {
           if (wall & mask) return true;
           wall = wall1;
         } 
       } else {
-        uint32_t mask = 1 <<  ((ball_x - 76) >> 2);
+        uint32_t mask = 1 <<  ((ball_x - (direction == LEFT ? 81 : 76) >> 2));
+
         for(int i=0;i<2; i++) {
           if (wall & mask) return true;
           wall = wall1;
@@ -672,15 +616,18 @@ bool check_collision(uint8_t direction) {
   return false; 
 }
 
+// Draw thin walls
 void draw_thin_walls(bool left) {
   for(int i=0;i<192;i++)
     lcd_draw_pixel(left ? 31 : 286, Y_OFFSET + i, 0);
 }
 
+// Check if area touched
 bool touched(uint8_t x0, uint8_t y0, uint8_t x, uint8_t y, int w, int h) {
-  return (x0 >= x && x0 <= x + w && y0 >= y && y0 <= y + h);
+  return (x0 >= x && x0 < x + w && y0 >= y && y0 < y + h);
 }
 
+// Check if ball touches an object rectangle
 bool touched_object(uint8_t x, uint8_t y, int w, int h) {
   return touched(ball_x, ball_y, x, y , w, h) ||
          touched(ball_x + 4, ball_y, x, y, w, h) ||
@@ -688,32 +635,48 @@ bool touched_object(uint8_t x, uint8_t y, int w, int h) {
          touched(ball_x + 4, ball_y + 8, x, y, w, h);
 }
 
+// Check if any object in current room is touched and returns its index
 int8_t check_objects() {
   for(int i=0;i<NUM_OBJECTS;i++) {
-    if (locations[i].room == current_room && locations[i].state == IN_ROOM) {
-      if (touched_object(locations[i].x, locations[i].y, 
-                         locations[i].w, locations[i].h)) {
-        return i;
-      }
-    }
+    ObjectLocations loc = locations[i];
+
+    if (loc.room == current_room && loc.state != CARRIED) 
+      if (touched_object(loc.x, loc.y, loc.w, loc.h)) return i;
   }
   return -1;
 }
-  
+
+// Move a specific dragon
+void move_dragon(uint8_t obj) {
+  ObjectLocations loc = locations[obj];
+
+  if (loc.state == DEAD) return;
+
+  draw_object(loc.x, loc.y, back_color, drag0, false);
+
+  if (ball_x > loc.x) loc.x++;
+  else if (ball_x < loc.x) loc.x--;
+
+  if (ball_y > loc.y) loc.y++;
+  else if (ball_y < loc.y) loc.y--;
+
+  draw_object(loc.x, loc.y, colors[loc.color], drag0, false);
+}
+
+// Main entry point  
 void main() {
-  reg_uart_clkdiv = 139;
+  reg_uart_clkdiv = 139; // 115,200 baud
 
+  // Initialise the LCD and clear whole screen to black
   lcd_init();
-
   lcd_clear_screen(0);
 
+  // Grey background
   back_color = colors[0];
 
+  // Start the ball under the portcullis
   ball_x = 78;
   ball_y = 148;
-
-  key_x = 0x20;
-  key_y = 0x50;
 
   uint8_t buttons = 0, old_buttons;
   uint8_t old_room;
@@ -722,10 +685,14 @@ void main() {
   draw_room(0);
   draw_object(76, 96, colors[4], one, false);
 
+  // Main game loop
   while(true) {
+    // Make copy of current room structure
+    Rooms room = rooms[current_room];
 
     // See if we have won
-    if (current_room == 0x12 && carried == CHALICE) {
+    if (current_room == YELLOW_CASTLE_ENTRY && carried == CHALICE) {
+      // Show room in multiple coloure forever
       while(true) {
         for(int i=i;i<=8;i++) {
           rooms[current_room].color = i;
@@ -734,32 +701,38 @@ void main() {
       }
     }
 
+    // Save old values of data
     old_buttons = buttons;
-    buttons = reg_buttons;
-
     old_room = current_room;
-
     old_ball_x = ball_x;
     old_ball_y = ball_y;
+
+    // Get button input
+    buttons = reg_buttons;
 
     // Check for game started
     if ((buttons & BUTTON_X) && !(old_buttons & BUTTON_X)) {
       if (!started) {
         started = true;
-        current_room = 0x11;
+        current_room = YELLOW_CASTLE;
       }
     }
 
     if (!started) continue;
 
+    // Move dragons
+    if (current_room == GREEN_DRAGON_ROOM) {
+      //move_dragon(GREEN_DRAGON);
+    }
+
     // Movement and collisions
     if ((buttons & BUTTON_UP) && !check_collision(UP)) {
       if (ball_y >= 2) ball_y--;
       else {
-        uint8_t up = rooms[current_room].above;
+        uint8_t up = room.above;
         if (up > 0 && up <= 30) { 
            current_room = up;
-           ball_y = 190; 
+           ball_y = 190;
         }
       }
     }
@@ -767,19 +740,19 @@ void main() {
     if ((buttons & BUTTON_DOWN) && !check_collision(DOWN)) {
       if (ball_y < 190) ball_y++;
       else {
-        uint8_t down = rooms[current_room].down;
+        uint8_t down = room.down;
         if (down > 0 && down <= 30) { 
            current_room = down;
-           if (current_room == 0x10 || current_room == 0x11) ball_y = 160;
+           if (current_room == BLACK_CASTLE || current_room == YELLOW_CASTLE) ball_y = 160;
            else ball_y = 0; 
         }
       }
-    } 
+    }
 
     if ((buttons & BUTTON_LEFT) && !check_collision(LEFT)) {
       if (ball_x >= 2) ball_x--;
       else {
-        uint8_t left = rooms[current_room].left;
+        uint8_t left = room.left;
         if (left > 0 && left <= 30) { 
            current_room = left;
            ball_x = 158; 
@@ -790,20 +763,22 @@ void main() {
     if ((buttons & BUTTON_RIGHT) && !check_collision(RIGHT)) {
       if (ball_x <= 158) ball_x++;
       else {
-        uint8_t right = rooms[current_room].right;
+        uint8_t right = room.right;
         if (right > 0 && right <= 30) { 
            current_room = right;
            ball_x = 0; 
         }
       }
     }
-
-    // Drop object
+    
+    // Drop object if button A pressed
     if ((buttons & BUTTON_A) && carried >= 0) {
-      locations[carried].state = IN_ROOM;
-      locations[carried].room = current_room;
-      locations[carried].x = ball_x + carried_x;
-      locations[carried].y = ball_y + carried_y;
+      ObjectLocations *locp = &locations[carried];
+
+      locp->state = IN_ROOM;
+      locp->room = current_room;
+      locp->x = ball_x + carried_x;
+      locp->y = ball_y + carried_y;
       carried = -1;
     }
 
@@ -811,42 +786,56 @@ void main() {
     int8_t obj = check_objects();
 
     if (obj >= 0) {
-      // Check for kiling dragon
-      if (obj == GREEN_DRAGON || obj == RED_DRAGON) {
-        if (carried == SWORD) locations[obj].data = drag2;
-      } else { 
+      ObjectLocations *locp = &locations[obj];
+      // Check for killing dragon
+      if (obj == GREEN_DRAGON || obj == YELLOW_DRAGON) {
+        if (carried == SWORD) {
+          locp->data = drag2;
+          locp->state = DEAD;
+          draw_object(locp->x, locp->y, back_color,
+                      drag0, false);
+          draw_object(locp->x, locp->y, colors[locp->color],
+                      drag2, false);
+        } else {
+          ball_x = old_ball_x;
+          ball_y = old_ball_y;
+        }
+      } else if (locp->state == IN_ROOM) { 
         // Drop any existing object
         if (carried >= 0) {
-          locations[carried].state = IN_ROOM;
-          locations[carried].state = IN_ROOM;
-          locations[carried].room = current_room;
-          locations[carried].x = ball_x + carried_x;
-          locations[carried].y = ball_y + carried_y;
+          ObjectLocations *carlocp = &locations[carried];
+
+          carlocp->state = IN_ROOM;
+          carlocp->room = current_room;
+          carlocp->x = ball_x + carried_x;
+          carlocp->y = ball_y + carried_y;
         }
 
         // Pick up new object 
         carried = obj;
-        draw_object(locations[carried].x, locations[carried].y, back_color,
-                    locations[carried].data, false);
-        carried_x = 0;
-        carried_y = 8;
-        locations[obj].state = CARRIED;
+        draw_object(locp->x, locp->y, back_color,
+                    locp->data, false);
+        carried_x = locp->x - ball_x;
+        carried_x += (carried_x > 0 ? 1 : -1);
+        carried_y = locp->y - ball_y;
+        carried_y += (carried_y > 0 ? 1 : -1);
+        locp->state = CARRIED;
       }
     }
 
     // Open portcullis if carrying the key
-    if (current_room == 0x10 || current_room == 0x11) { // castle
-      if (touched_object(76, 112, 16, 32)) {
-        if (rooms[current_room].port_open) {
-          current_room = rooms[current_room].above;
+    if (current_room == BLACK_CASTLE || current_room == YELLOW_CASTLE) {
+      if (touched_object(76, 112, 8, 32)) {
+        if (room.port_open) {
+          current_room = room.above;
           ball_y = 190;
         } else if ((current_room == 0x10 && carried == BLACK_KEY) ||
-            (current_room == 0x11 && carried == YELLOW_KEY)) {
-          if (!rooms[current_room].port_open) {
+            (current_room == YELLOW_CASTLE && carried == YELLOW_KEY)) {
+          if (!room.port_open) {
             open_portcullis();
             rooms[current_room].port_open = true;
           }
-          current_room = rooms[current_room].above;
+          current_room = room.above;
           ball_y = 190;
         } else {
           // No entry
@@ -867,25 +856,27 @@ void main() {
 
       draw_objects();
 
-      if (current_room >= 0xF && current_room <= 0x11) { // Is it a castle
-        draw_portcullis(16);
+      if (current_room >= BLACK_CASTLE && current_room <= YELLOW_CASTLE) { // Is it a castle
+        if (!rooms[current_room].port_open) draw_portcullis(16);
       }
     }
 
     // Redraw stuff when ball moves
     if (ball_x != old_ball_x || ball_y != old_ball_y) {
+      ObjectLocations carloc = locations[carried];
+
       if (current_room == old_room) {
         draw_ball(old_ball_x, old_ball_y, back_color);
         if (carried >= 0)
           draw_object(old_ball_x + carried_x, old_ball_y + carried_y, back_color,
-                      locations[carried].data, false);
+                      carloc.data, false);
       }
 
       draw_ball(ball_x, ball_y, room_color);
 
       if (carried >= 0) 
         draw_object(ball_x + carried_x, ball_y + carried_y, 
-                    colors[locations[carried].color], locations[carried].data, false);
+                    colors[carloc.color], carloc.data, false);
     }
   }
 }

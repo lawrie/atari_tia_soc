@@ -63,8 +63,8 @@ set_io -nowarn X B8 # pin 19
 set_io -nowarn Y A9 # pin 18
 set_io -nowarn A C9 # pin 17
 set_io -nowarn B  D8 # pin 16
-set_io AUDIO_LEFT D9 # pin 15
-set_io AUDIO_RIGHT H9 # pin 14
+set_io -nowarn AUDIO_LEFT D9 # pin 15
+set_io -nowarn AUDIO_RIGHT H9 # pin 14
 
 set_io -nowarn BUTTONS[0] B6
 set_io -nowarn BUTTONS[1] A7
@@ -82,29 +82,29 @@ set_io -nowarn SD_MISO B7        # pin 21
 set_io -nowarn SD_MOSI A8        # pin 20
 
 # SPI flash interface on bottom of board
-set_io --warn-no-port SPI_SS F7
-set_io --warn-no-port SPI_SCK G7
-set_io --warn-no-port SPI_IO0 G6
-set_io --warn-no-port SPI_IO1 H7
-set_io --warn-no-port SPI_IO2 H4
-set_io --warn-no-port SPI_IO3 J8
+set_io -nowarn SPI_SS F7
+set_io -nowarn SPI_SCK G7
+set_io -nowarn SPI_IO0 G6
+set_io -nowarn SPI_IO1 H7
+set_io -nowarn SPI_IO2 H4
+set_io -nowarn SPI_IO3 J8
 
 # General purpose pins on bottom of board
 set_io SER_RX G1
-#set_io --warn-no-port PIN_26 J3
-#set_io --warn-no-port PIN_27 J4
-#set_io --warn-no-port PIN_28 G9
-#set_io --warn-no-port PIN_29 J9
-#set_io --warn-no-port PIN_30 E8
-#set_io --warn-no-port PIN_31 J2
+#set_io -nowarn PIN_26 J3
+#set_io -nowarn PIN_27 J4
+#set_io -nowarn PIN_28 G9
+#set_io -nowarn PIN_29 J9
+#set_io -nowarn PIN_30 E8
+#set_io -nowarn PIN_31 J2
 
 # LED
-set_io --warn-no-port LED B3
+set_io -nowarn LED B3
 
 # USB
-#set_io --warn-no-port USBP B4
-#set_io --warn-no-port USBN A4
-set_io --warn-no-port USBPU A3
+#set_io -nowarn USBP B4
+#set_io -nowarn USBN A4
+set_io -nowarn USBPU A3
 
 # 16MHz clock
-set_io --warn-no-port CLK B2 # input
+set_io -nowarn CLK B2 # input

@@ -86,6 +86,10 @@ void lcd_clear(uint16_t c, int s, int w) {
         uint8_t c2 = c;
 
         reg_dc = 1;
+        /*for(int i=0; i< HEIGHT*w; i++) {
+                reg_xfer = c1;
+                reg_xfer = c2;
+        }*/
         reg_fast_xfer = ((HEIGHT*w) << 16) | c;
 }
 
@@ -102,5 +106,28 @@ void lcd_draw_pixel(int16_t x, int16_t y, uint16_t color) {
 
         lcd_send_data(color >> 8);
         lcd_send_data(color);
+}
+
+void lcd_draw_char(int16_t x, int16_t y, unsigned char c, uint16_t color, uint16_t bc) {
+    if((x >= WIDTH)      || // Clip right
+       (y >= HEIGHT)     || // Clip bottom
+       ((x + 6 - 1) < 0) || // Clip left
+       ((y + 8 - 1) < 0))   // Clip top
+        return;
+
+    for(int8_t i=0; i<5; i++ ) { // Char bitmap = 5 columns
+        uint8_t line = font[c * 5 + i];
+        for(int8_t j=0; j<8; j++, line >>= 1)
+            lcd_draw_pixel(x+i, y+j, line & 1 ? color : bc);
+    }
+}
+
+void lcd_draw_text(int16_t x, int16_t y, const char *text, uint16_t c, uint16_t bc) {
+    for(int i=0;text[i];i++) lcd_draw_char(x + i*6, y,text[i], c, bc);
+}
+
+void lcd_push_pixel(uint16_t color) {
+    lcd_send_data(color >> 8);
+    lcd_send_data(color);
 }
 
