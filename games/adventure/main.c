@@ -728,7 +728,7 @@ uint32_t get_wall(uint8_t y) {
  
 // Check for collisions with walls 
 bool check_collision(uint8_t direction) {
-  uint32_t wall, wall1;
+  uint32_t wall, mask;
   Rooms room = rooms[current_room];
 
   switch (direction) {
@@ -737,18 +737,14 @@ bool check_collision(uint8_t direction) {
       wall = get_wall(ball_y + (direction == UP ? -1 : 8));
     
       if (ball_x < (SCREEN_WIDTH / 2) ) {
-        uint32_t mask = 1 << (((SCREEN_WIDTH / 2) - 1 - ball_x) >> 2);
-
-        for(int i=0;i<2; i++) {
+        for(int i=0;i<4; i++) {
+          mask = 1 << (((SCREEN_WIDTH / 2) - 1 - i - ball_x) >> 2);
           if (wall & mask) return true;
-          mask >>= 1;
         } 
       } else {
-        uint32_t mask = 1 <<  ((ball_x - (SCREEN_WIDTH / 2) + 3) >> 2);
-
-        for(int i=0;i<2; i++) {
+        for(int i=0;i<4; i++) {
+          mask = 1 <<  ((ball_x + i - (SCREEN_WIDTH / 2)) >> 2);
           if (wall & mask) return true;
-          mask >>= 1;
         }
       } 
       break;
@@ -760,24 +756,16 @@ bool check_collision(uint8_t direction) {
       // Check for thin wall
       if (direction == RIGHT && 
           ((room.pf_control & 2) && ball_x == 138)) return true;
-      
-      wall = get_wall(ball_y);
-      wall1 = get_wall(ball_y + 1);
-
+        
       if (ball_x < (SCREEN_WIDTH / 2)) {
-        uint32_t mask = 1 << (((direction == LEFT ? 80 : 75) - ball_x) >> 2);
-
-        for(int i=0;i<2; i++) {
-          if (wall & mask) return true;
-          wall = wall1;
-        } 
+        mask = 1 << (((direction == LEFT ? 80 : 75) - ball_x) >> 2);
       } else {
-        uint32_t mask = 1 <<  ((ball_x - (direction == LEFT ? 81 : 76) >> 2));
+        mask = 1 << ((ball_x - (direction == LEFT ? 81 : 76)) >> 2);
+      }
 
-        for(int i=0;i<2; i++) {
-          if (wall & mask) return true;
-          wall = wall1;
-        }
+      for(int i=0;i<8; i++) {
+        wall = get_wall(ball_y + i);
+        if (wall & mask) return true;
       } 
       break;
   }
