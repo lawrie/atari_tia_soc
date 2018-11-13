@@ -641,10 +641,19 @@ int8_t carried = -1;
 int8_t carried_x, carried_y;
 uint16_t room_color, back_color;
 
-// Get pixel corresponding to room co-ordinates - not yet used
-uint8_t get_pixel(uint8_t r, uint8_t x, uint8_t y) {
-  return ((rooms[r].data[y < 16 ? 0 : 1 + (y >> 5)] & 
-          (0x80000 >> ((x >= 80 ? x : 159 -x) >> 2))) ? 1 : 0);  
+// Get 20-bit wall data for given row
+uint32_t get_wall(uint8_t y) {
+  uint32_t *data = rooms[current_room].data;
+
+  if (y < 16) return data[0];
+  else return data[((y-16) >> 5) + 1];
+}
+ 
+// Get pixel corresponding to room co-ordinates 
+bool get_pixel(uint8_t r, uint8_t x, uint8_t y) {
+  uint32_t row = get_wall(y);
+  uint32_t mask = 1 << ((x >=80 ? x-80 : 79-x) >> 2);
+  return (row & mask);
 }
 
 // Draw room
@@ -683,9 +692,33 @@ void draw_object(uint8_t x, uint8_t y, uint16_t oc, const uint8_t *d, bool big) 
   while(*d) {
     uint8_t c = *d;
     for(int i=0;i<8;i++) {
-      for(int j=0;j<(big ? 8 : 2);j++) 
+      for(int j=0;(c & 0x80) && j<(big ? 8 : 2);j++) 
         for(int k=0; k<(big ? 2 : 1) && y + k  < 192;k++) 
-          if (c & 0x80) lcd_draw_pixel((x<<1) + (i<<shift) + j, Y_OFFSET + y + k, oc);
+          lcd_draw_pixel((x<<1) + (i<<shift) + j, Y_OFFSET + y + k, oc);
+      c <<= 1;
+    }
+    d++;
+    y += (big ? 2 : 1);;
+  }
+}
+
+// Draw object
+void undraw_object(uint8_t x, uint8_t y, const uint8_t *d, bool big) {
+  uint8_t shift = (big ? 3 : 1);
+  uint16_t room_color = colors[rooms[current_room].color];
+
+  while(*d) {
+    uint8_t c = *d;
+    for(int i=0;i<8;i++) {
+      for(int j=0;(c & 0x80) && j<(big ? 8 : 2);j++) 
+        for(int k=0; k<(big ? 2 : 1) && y + k  < 192;k++) {
+          uint16_t xx = (x<<1) + (i<<shift) + j;
+          uint8_t yy = y + k;
+          bool pix = get_pixel(current_room, xx >> 1, yy);
+          uint16_t color =  (pix ? room_color : back_color); 
+
+          lcd_draw_pixel(xx, Y_OFFSET + yy, color);
+        }
       c <<= 1;
     }
     d++;
@@ -718,14 +751,6 @@ void open_portcullis() {
   }
 }
 
-// Get 20-bit wall data for given row
-uint32_t get_wall(uint8_t y) {
-  uint32_t *data = rooms[current_room].data;
-
-  if (y < 16) return data[0];
-  else return data[((y-16) >> 5) + 1];
-}
- 
 // Check for collisions with walls 
 bool check_collision(uint8_t direction) {
   uint32_t wall, mask;
@@ -848,9 +873,9 @@ void main() {
 
     // See if we have won
     if (current_room == YELLOW_CASTLE_ENTRY && carried == CHALICE) {
-      // Show room in multiple coloure forever
+      // Show room in multiple colours forever
       while(true) {
-        for(int i=i;i<=8;i++) {
+        for(int i=1;i<=8;i++) {
           rooms[current_room].color = i;
           draw_room(current_room);
         }
@@ -948,7 +973,7 @@ void main() {
         if (carried == SWORD) {
           locp->data = drag2;
           locp->state = DEAD;
-          draw_object(locp->x, locp->y, back_color,
+          undraw_object(locp->x, locp->y,
                       drag0, false);
           draw_object(locp->x, locp->y, colors[locp->color],
                       drag2, false);
@@ -969,7 +994,7 @@ void main() {
 
         // Pick up new object 
         carried = obj;
-        draw_object(locp->x, locp->y, back_color,
+        undraw_object(locp->x, locp->y, 
                     locp->data, false);
         carried_x = locp->x - ball_x;
         carried_x += (carried_x > 0 ? 1 : -1);
@@ -1025,10 +1050,10 @@ void main() {
       ObjectLocations carloc = locations[carried];
 
       if (current_room == old_room) {
-        draw_ball(old_ball_x, old_ball_y, back_color);
         if (carried >= 0)
-          draw_object(old_ball_x + carried_x, old_ball_y + carried_y, back_color,
+          undraw_object(old_ball_x + carried_x, old_ball_y + carried_y, 
                       carloc.data, false);
+        draw_ball(old_ball_x, old_ball_y, back_color);
       }
 
       draw_ball(ball_x, ball_y, room_color);
