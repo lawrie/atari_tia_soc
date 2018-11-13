@@ -197,12 +197,33 @@ uint32_t maze_side[] = {
 };
 
 uint32_t red_maze_1[] = {
+       0xFFFFF,          //XXXXXXXXXXXXXXXXXXXXRRRRRRRRRRRRRRRRRRRR
+       0x00000,          //
+       0xFFFF0,          //XXXXXXXXXXXXXXXX        RRRRRRRRRRRRRRRR
+       0x00003,          //                  XX        RR
+       0xFFFF3,          //XXXXXXXXXXXX  XX        RR  RRRRRRRRRRRR
+       0xF0333,          //XXXX      XX  XX  XXRR  RR  RR      RRRR
+       0xFFFF0           //XXXXXXXXXXXXXXXX        RRRRRRRRRRRRRRRR
 };
 
 uint32_t red_maze_top[] = {
+       0xFFFFF,          //XXXXXXXXXXXXXXXXXXXXRRRRRRRRRRRRRRRRRRRR
+       0x00003,          //                  XXRR
+       0xFFFF3,          //XXXXXXXXXXXXXXXX  XXRR  RRRRRRRRRRRRRRRR
+       0x00033,          //              XX  XXRR  RR
+       0xF33FF,          //XXXX  XX  XXXXXXXXXXRRRRRRRRRR  RR  RRRR
+       0xF3300,          //XXXX  XX  XX                RR  RR  RRRR
+       0xF33F3           //XXXX  XX  XXXXXX  XXRR  RRRRRR  RR  RRRR
 };
 
 uint32_t red_maze_bottom[] = {
+       0xF33F3,          //XXXX  XX  XXXXXX  XXRR  RRRRRR  RR  RRRR
+       0xF3000,          //XXXX  XX                        RR  RRRR
+       0xF33FF,          //XXXX  XX  XXXXXXXXXXRRRRRRRRRR  RR  RRRR
+       0x03300,          //      XX  XX                RR  RR  RRRR
+       0xFFF00,          //XXXXXXXXXXXX                RRRRRRRRRRRR
+       0x00000,          //
+       0xFFFF0           //XXXXXXXXXXXXXXXX        RRRRRRRRRRRRRRRR
 };
 
 // Room numbers
@@ -210,6 +231,7 @@ uint32_t red_maze_bottom[] = {
 #define YELLOW_CASTLE 0x11
 #define YELLOW_CASTLE_ENTRY 0x12
 #define GREEN_DRAGON_ROOM 0x1D
+#define NAME_ROOM 0x1E
 
 // Room table
 typedef struct Rooms {
@@ -224,7 +246,7 @@ Rooms rooms[] = {
   {number_room,        1, 0x00, 0x00, 0x00, 0x00, 0x00, false}, // 00 Number room
   {below_yellow_flip,  8, 0x01, 0x08, 0x02, 0x00, 0x02, false}, // 01 Under Blue Maze
   {below_yellow,       4, 0x00, 0x11, 0x01, 0x00, 0x03, false}, // 02 Under Yellow Castle
-  {left_of_name,       2, 0x02, 0x00, 0x02, 0x1D, 0x1E, false}, // 03 Left of Name
+  {left_of_name,       2, 0x00, 0x00, 0x02, 0x1D, 0x1E, false}, // 03 Left of Name
   {blue_maze_top,      5, 0x00, 0x10, 0x05, 0x07, 0x05, false}, // 04 Top of Blue Maze
   {blue_maze_1,        5, 0x00, 0x1D, 0x04, 0x08, 0x06, false}, // 05 Blue Maze #1
   {blue_maze_bottom,   5, 0x00, 0x07, 0x05, 0x03, 0x05, false}, // 06 Bottom of Blue Maze
@@ -250,8 +272,8 @@ Rooms rooms[] = {
   {white_castle_entry, 3, 0x00, 0x18, 0x19, 0x18, 0x19, false}, // 1A White Castle Entry
   {two_exit,           3, 0x00, 0x1C, 0x89, 0x10, 0x89, false}, // 1B Black Castle Entry
   {number_room,        1, 0x00, 0x1D, 0x07, 0x1B, 0x08, false}, // 1C Other Purple Room
-  {top_entry,          3, 0x00, 0x03, 0x00, 0x00, 0x00, false}, // 1D Green dragon room
-  {below_yellow,       2, 0x00, 0x06, 0x01, 0x06, 0x03, false}  // 1E Name Room
+  {top_entry,          3, 0x00, 0x03, 0x00, 0x00, 0x03, false}, // 1D Green dragon room
+  {below_yellow,       1, 0x00, 0x06, 0x01, 0x06, 0x03, false}  // 1E Name Room
 };
 
 // Object data
@@ -326,6 +348,32 @@ uint8_t drag2[] = {
        0x00
 };
 
+uint8_t bat1[] = {
+       0x81,                  //X      X
+       0x81,                  //X      X
+       0xC3,                  //XX    XX
+       0xC3,                  //XX    XX
+       0xFF,                  //XXXXXXX
+       0x5A,                  // X XX X
+       0x66,                  // XX  XX
+       0x00
+};
+
+uint8_t bat2[] = {
+       0x01,                  //       X
+       0x80,                  //X
+       0x01,                  //       X
+       0x80,                  //X
+       0x3C,                  //  XXXX
+       0x5A,                  // X XX X
+       0x66,                  // XX  XX
+       0xC3,                  //X    XX
+       0x81,                  //X      X
+       0x81,                  //X      X
+       0x81,                  //X      X 
+       0x00
+};
+
 uint8_t key[] = {
        0x07,                  //     XXX
        0xFD,                  //XXXXXX X
@@ -360,7 +408,6 @@ uint8_t sword[] = {
        0x20,                  //  X
        0x00
 };
-
 
 uint8_t magnet[] = {
        0x3C,                  //  XXXX
@@ -415,6 +462,127 @@ uint8_t one[] = {
        0x04,                  // X
        0x04,                  // X
        0x0E,                  //XXX
+       0x00
+};
+
+uint8_t two[] = {
+       0x0E,                  // XXX
+       0x11,                  //X   X
+       0x01,                  //    X
+       0x02,                  //   X
+       0x04,                  //  X
+       0x08,                  // X
+       0x1F,                  //XXXXX
+       0x00
+};
+
+uint8_t three[] = {
+       0x0E,                  // XXX
+       0x11,                  //X   X
+       0x01,                  //    X
+       0x06,                  //  XX
+       0x01,                  //    X
+       0x11,                  //X   X
+       0x0E,                  // XXX
+       0x00
+};
+
+const uint8_t easter_egg[] = {
+       0xF0,                 //XXXX
+       0x80,                 //X
+       0x80,                 //X
+       0x80,                 //X
+       0xF4,                 //XXXX X
+       0x04,                 //     X
+       0x87,                 //X    XXX
+       0xE5,                 //XXX  X X
+       0x87,                 //X    XXX
+       0x80,                 //X
+       0x05,                 //     X X
+       0xE5,                 //XXX  X X
+       0xA7,                 //X X  XXX
+       0xE1,                 //XXX    X
+       0x87,                 //X    XXX
+       0xE0,                 //XXX
+       0x01,                 //       X
+       0xE0,                 //XXX
+       0xA0,                 //X X
+       0xF0,                 //XXXX
+       0x01,                 //       X
+       0x40,                 // X
+       0xE0,                 //XXX
+       0x40,                 // X
+       0x40,                 // X
+       0x40,                 // X
+       0x01,                 //       X
+       0xE0,                 //XXX
+       0xA0,                 //X X
+       0xE0,                 //XXX
+       0x80,                 //X
+       0xE0,                 //XXX
+       0x01,                 //       X
+       0x20,                 //  X
+       0x20,                 //  X
+       0xE0,                 //XXX
+       0xA0,                 //X X
+       0xE0,                 //XXX
+       0x01,                 //       X
+       0x01,                 //       X
+       0x01,                 //       X
+       0x88,                 //   X   X
+       0xA8,                 //X X X
+       0xA8,                 //X X X
+       0xA8,                 //X X X
+       0xF8,                 //XXXXX
+       0x01,                 //       X
+       0xE0,                 //XXX 
+       0xA0,                 //X X 
+       0xF0,                 //XXXX
+       0x01,                 //       X
+       0x80,                 //X
+       0xE0,                 //XXX
+       0x8F,                 //X   XXXX
+       0x89,                 //X   X  X
+       0x0F,                 //    XXXX
+       0x8A,                 //X   X X
+       0xE9,                 //XXX X  X
+       0x80,                 //X
+       0x8E,                 //X   XXX
+       0x0A,                 //    X X
+       0xEE,                 //XXX XXX
+       0xA0,                 //X X
+       0xE8,                 //XXX X
+       0x88,                 //X   X
+       0xEE,                 //XXX XXX
+       0x0A,                 //    X X
+       0x8E,                 //X   XXX
+       0xE0,                 //XXX
+       0xA4,                 //X X  X
+       0xA4,                 //X X  X
+       0x04,                 //     X
+       0x80,                 //X
+       0x08,                 //    X
+       0x0E,                 //    XXX
+       0x0A,                 //    X X
+       0x0A,                 //    X X
+       0x80,                 //X
+       0x0E,                 //    XXX
+       0x0A,                 //    X X
+       0x0E,                 //    XXX
+       0x08,                 //    X
+       0x0E,                 //    XXX
+       0x80,                 //X
+       0x04,                 //     X
+       0x0E,                 //    XXX
+       0x04,                 //     X
+       0x04,                 //     X
+       0x04,                 //     X
+       0x80,                 //X
+       0x04,                 //     X
+       0x0E,                 //    XXX
+       0x04,                 //     X
+       0x04,                 //     X
+       0x04,                 //     X
        0x00
 };
 
@@ -853,6 +1021,9 @@ void main() {
       uint8_t thin_walls = rooms[current_room].pf_control;
 
       if (thin_walls & 3) draw_thin_walls(thin_walls & 1);
+
+      if (current_room == NAME_ROOM) 
+        draw_object(78, 0, colors[3], easter_egg, false);
 
       draw_objects();
 
