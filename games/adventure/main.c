@@ -176,24 +176,73 @@ uint32_t blue_maze_entry[] = {
 
 // Unused rooms in level 1
 uint32_t black_maze_1[] = {
+       0xFF0FF,          //XXXXXXXX    XXXXXXXXRRRRRRRR    RRRRRRRR
+       0x00003,          //            XX            RR
+       0xFFFFC,          //XXXXXXXXXXXXXX            RRRRRRRRRRRRRR
+       0x00000,          //
+       0xC3000,          //XX    XXXXXXXXXXXXXXRRRRRRRRRRRRRR    RR
+       0x03000,          //      XX                        RR 
+       0xFF0FF           //XXXXXXXX    XXXXXXXXRRRRRRRR    RRRRRRRR
 };
 
 uint32_t black_maze_2[] = {
+       0xFFFFF,          //XXXXXXXXXXXXXXXXXXXXMMMMMMMMMMMMMMMMMMMM
+       0x00003,          //                  XX                  MM
+       0xFFFF3,          //XXXXXXXXXXXXXXXX  XXMMMMMMMMMMMMMMMM  MM
+       0x0003C,          //                  XX                  MM
+       0xF0FFF,          //XXXX    XXXXXXXXXXXXMMMM    MMMMMMMMMMMM
+       0x00F03,          //        XXXX      XX        MMMM      MM
+       0xCCF33           //XX  XX  XXXX  XX  XXMM  MM  MMMM  MM  MM
 };
 
 uint32_t black_maze_3[] = {
+       0xFF0FF,          //XXXXXXXX    XXXXXXXXRRRRRRRR    RRRRRRRR
+       0xC0000,          //XX                  MM
+       0xC3FFF,          //XX    XXXXXXXXXXXXXXMM    MMMMMMMMMMMMMM
+       0x03000,          //      XX                  MM
+       0xFF0FF,          //XXXXXXXX    XXXXXXXXMMMMMMMM    MMMMMMMM
+       0xC00C0,          //XX          XX      MM          MM
+       0xFF0FF           //XXXXXXXX    XXXXXXXXMMMMMMMM    MMMMMMMM
 };
 
 uint32_t black_maze_entry[] = {
+       0xCCF33,          //XX  XX  XXXX  XX  XXMM  MM  MMMM  MM  MM
+       0x00C03,          //        XX        XXRR        RR
+       0xFFFF0,          //XXXXXXXXXXXXXXXX        RRRRRRRRRRRRRRRR
+       0x00000,          //
+       0xFFFF0,          //XXXXXXXXXXXXXXXX        RRRRRRRRRRRRRRRR
+       0x00000,          //
+       0xFFFF0           //XXXXXXXXXXXXXXXX        RRRRRRRRRRRRRRRR
 };
 
 uint32_t maze_middle[] = {
+       0xFFF33,          //XXXXXXXXXXXX  XX  XXRR  RR  RRRRRRRRRRRR
+       0x00033,          //              XX  XXRR  RR
+       0xF03F3,          //XXXX      XXXXXX  XXRR  RRRRRR      RRRR
+       0x00300,          //          XX                RR
+       0xFF33F,          //XXXXXXXX  XX  XXXXXXRRRRRR  RR  RRRRRRRR
+       0x03330,          //      XX  XX  XX        RR  RR  RR 
+       0xF3333           //XXXX  XX  XX  XX  XXRR  RR  RR  RR  RRRR
 };
 
 uint32_t maze_entry[] = {
+       0xFFFF0,          //XXXXXXXXXXXXXXXX        RRRRRRRRRRRRRRRR
+       0x0C000,          //      XX                        RR
+       0xF30FF,          //XXXX  XX    XXXXXXXXRRRRRRRRR   RR  RRRR
+       0x03003,          //      XX          XXRR          RR
+       0xFF303,          //XXXXXXXX  XX      XXRR      RR  RRRRRRRR
+       0x00303,          //          XX      XXRR      RR
+       0xFFF33,          //XXXXXXXXXXXX  XX  XXRR  RR  RRRRRRRRRRRR
 };
 
 uint32_t maze_side[] = {
+       0xF3333,          //XXXX  XX  XX  XX  XXRR  RR  RR  RR  RRRR
+       0x03033,          //      XX      XX  XXRR  RR      RR
+       0x03F33,          //      XXXXXX  XX  XXRR  RR  RRRRRR
+       0x00003,          //                  XXRR
+       0x03FC3,          //      XXXXXXXX    XXRR    RRRRRRRR
+       0x03003,          //      XX          XXRR          RR
+       0xFFFFF           //XXXXXXXXXXXXXXXXXXXXRRRRRRRRRRRRRRRRRRRR 
 };
 
 uint32_t red_maze_1[] = {
@@ -861,6 +910,7 @@ void main() {
 
   uint8_t buttons = 0, old_buttons;
   uint8_t old_room;
+  uint8_t level = 1, old_level;
 
   // Start in number room. Only level 1 currently available.
   draw_room(0);
@@ -887,6 +937,7 @@ void main() {
     old_room = current_room;
     old_ball_x = ball_x;
     old_ball_y = ball_y;
+    old_level = level;
 
     // Get button input
     buttons = reg_buttons;
@@ -899,7 +950,19 @@ void main() {
       }
     }
 
-    if (!started) continue;
+    if (!started) {
+      if ((buttons & BUTTON_Y) && !(old_buttons & BUTTON_Y)) {
+        if (++level >  3) level = 1;
+
+        undraw_object(76, 96, 
+                      (old_level == 1 ? one : (old_level == 2 ? two: three)), false);
+
+        draw_object(76, 96, colors[4], 
+                    (level == 1 ? one : (level == 2 ? two : three)), false);
+      }
+     
+      continue;
+    }
 
     // Move dragons
     if (current_room == GREEN_DRAGON_ROOM) {
