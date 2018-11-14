@@ -9,6 +9,9 @@
 #define reg_buttons (*(volatile uint32_t*)0x03000004)
 #define reg_uart_data (*(volatile uint32_t*)0x02000008)
 
+#define reg_pf (*(volatile uint32_t*)0x05000010)
+#define reg_color (*(volatile uint32_t*)0x05000014)
+
 #define SCREEN_WIDTH 160
 #define SCREEN_HEIGHT 192
 
@@ -276,6 +279,7 @@ uint32_t red_maze_bottom[] = {
 };
 
 // Room numbers
+#define YELLOW_DRAGON_ROOM 0x01
 #define BLACK_CASTLE 0x10
 #define YELLOW_CASTLE 0x11
 #define YELLOW_CASTLE_ENTRY 0x12
@@ -706,8 +710,35 @@ bool get_pixel(uint8_t r, uint8_t x, uint8_t y) {
   return (row & mask);
 }
 
-// Draw room
 void draw_room(int r) {
+  Rooms room = rooms[r];
+
+  for(int i=0;i<7;i++) {
+    if (i == 0) {
+      lcd_set_window(0, 24, WIDTH-1, HEIGHT-1);
+      lcd_send_cmd(ILI9341_MEMORYWRITE);
+      reg_dc = 1;
+
+      reg_pf = room.data[0];
+      reg_color = (back_color << 16) | colors[room.color];
+    } else {
+      int n = (i-1)*2 + 1;
+      for(int j=0;j<2 && n+j < 12;j++) {
+        lcd_set_window(0, 24 + ((n + j) << 4), WIDTH-1, HEIGHT-1);
+        lcd_send_cmd(ILI9341_MEMORYWRITE);
+        reg_dc = 1;
+
+        reg_pf = room.data[i];
+        reg_color = (back_color << 16) | colors[room.color];
+      }
+    }
+  }
+
+}
+
+/*
+// Draw room
+void slow_draw(int r) {
   Rooms room = rooms[r];
 
   for(int y=0; y<7; y++) {
@@ -728,6 +759,7 @@ void draw_room(int r) {
     }
   }
 }
+*/
 
 // Draw player (ball)
 void draw_ball(uint8_t x, uint8_t y, uint16_t c) {
@@ -922,11 +954,16 @@ void main() {
   uint8_t level = 1, old_level;
 
   // Start in number room. Only level 1 currently available.
+  //draw_room(0);
   draw_room(0);
   draw_object(76, 96, colors[4], one, 0);
 
+  uint32_t counter;
+
   // Main game loop
   while(true) {
+    counter++;
+
     // Make copy of current room structure
     Rooms room = rooms[current_room];
 
@@ -975,7 +1012,9 @@ void main() {
 
     // Move dragons
     if (current_room == GREEN_DRAGON_ROOM) {
-      //move_dragon(GREEN_DRAGON);
+      if (counter & 1) move_dragon(GREEN_DRAGON);
+    } else if (current_room == YELLOW_DRAGON_ROOM) {
+      if (counter & 1) move_dragon(YELLOW_DRAGON);
     }
 
     // Movement and collisions

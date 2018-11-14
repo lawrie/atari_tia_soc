@@ -17,6 +17,12 @@ module ili9341_direct
   reg [1:0] state = 0;
   reg [2:0] fast_state;
   reg [15:0] num_bytes;
+  reg [19:0] pf;
+  reg [15:0] back_color;
+  reg [15:0] room_color;
+  reg [4:0] pf_bit;
+  reg [7:0] pf_y;
+  reg [8:0] pf_x;
 
   always @(posedge clk) begin
     iomem_ready <= 0;
@@ -77,6 +83,54 @@ module ili9341_direct
                  fast_state <= 5;
                end else begin
                  num_bytes <= num_bytes - 1;
+                 fast_state <= 1;
+              end
+            end
+            5: begin
+               iomem_ready <= 1;
+               write_edge <= 0;
+               fast_state <= 0;
+            end
+          endcase
+        end else if (iomem_addr[7:0] == 'h10) begin // Set PF values
+          pf <= iomem_wdata[19:0];
+        end else if (iomem_addr[7:0] == 'h14) begin // Draw room 
+          iomem_ready <= 0;
+          
+          case (fast_state)
+            0 : begin
+              num_bytes <= 5120;
+              back_color <= iomem_wdata[31:16];
+              room_color <= iomem_wdata[15:0];
+              pf_bit <= 19;
+              pf_x = 0;
+              pf_y = 0;
+              fast_state <= 1;
+            end
+            1: begin
+              write_edge <= 0;
+              dout <= (pf[pf_bit]) ? room_color[15:8] : back_color[15:8];
+              fast_state <= 2;
+            end
+            2 : begin
+               write_edge <= 1;
+               fast_state <= 3;
+            end
+            3 : begin
+               write_edge <= 0;
+               dout <= (pf[pf_bit]) ? room_color[7:0] : back_color[7:0];
+               fast_state <= 4;
+            end
+            4: begin
+               write_edge <= 1;
+               if (num_bytes == 1) begin
+                 fast_state <= 5;
+               end else begin
+                 num_bytes <= num_bytes - 1;
+                 pf_x <= (pf_x == 319 ? 0 : pf_x + 1);
+                 if (pf_x == 319) pf_y <= pf_y + 1;
+                 if (&pf_x[2:0] && pf_x != 159 && pf_x != 319) 
+                   pf_bit <= (pf_x < 160 ? pf_bit - 1 : pf_bit + 1);
                  fast_state <= 1;
               end
             end
