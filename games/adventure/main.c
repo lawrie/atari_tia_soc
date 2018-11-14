@@ -801,10 +801,31 @@ void open_portcullis() {
   }
 }
 
+// Check if area touched
+bool touched(uint8_t x0, uint8_t y0, uint8_t x, uint8_t y, int w, int h) {
+  return (x0 >= x && x0 < x + w && y0 >= y && y0 < y + h);
+}
+
+// Check if ball touches an object rectangle
+bool touched_object(uint8_t x, uint8_t y, int w, int h) {
+  return touched(ball_x, ball_y, x, y , w, h) ||
+         touched(ball_x + 4, ball_y, x, y, w, h) ||
+         touched(ball_x, ball_y + 8, x, y, w, h) ||
+         touched(ball_x + 4, ball_y + 8, x, y, w, h);
+}
+
 // Check for collisions with walls 
 bool check_collision(uint8_t direction) {
   uint32_t wall, mask;
   Rooms room = rooms[current_room];
+
+  // See if there is a bridge
+
+  if (locations[BRIDGE].room == current_room) {
+    ObjectLocations bridge = locations[BRIDGE];
+
+    if (touched_object(bridge.x + 8, bridge.y, bridge.w - 16 , bridge.h)) return false;  
+  }
 
   switch (direction) {
     case UP:
@@ -851,19 +872,6 @@ bool check_collision(uint8_t direction) {
 void draw_thin_walls(bool left) {
   for(int i=0;i<192;i++)
     lcd_draw_pixel(left ? 31 : 286, Y_OFFSET + i, 0);
-}
-
-// Check if area touched
-bool touched(uint8_t x0, uint8_t y0, uint8_t x, uint8_t y, int w, int h) {
-  return (x0 >= x && x0 < x + w && y0 >= y && y0 < y + h);
-}
-
-// Check if ball touches an object rectangle
-bool touched_object(uint8_t x, uint8_t y, int w, int h) {
-  return touched(ball_x, ball_y, x, y , w, h) ||
-         touched(ball_x + 4, ball_y, x, y, w, h) ||
-         touched(ball_x, ball_y + 8, x, y, w, h) ||
-         touched(ball_x + 4, ball_y + 8, x, y, w, h);
 }
 
 // Check if any object in current room is touched and returns its index
@@ -1045,7 +1053,9 @@ void main() {
           ball_x = old_ball_x;
           ball_y = old_ball_y;
         }
-      } else if (locp->state == IN_ROOM) { 
+      } else if (locp->state == IN_ROOM && 
+                 (obj != BRIDGE || ball_x - locp->x < 8 || 
+                  ((locp->x + locp->w) - (ball_x + 4)) < 8)) { 
         // Drop any existing object
         if (carried >= 0) {
           ObjectLocations *carlocp = &locations[carried];
