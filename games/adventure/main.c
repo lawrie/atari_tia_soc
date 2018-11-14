@@ -665,20 +665,21 @@ typedef struct ObjectLocations {
   uint8_t h;
   uint8_t state;
   uint8_t color;
+  uint8_t size;
 } ObjectLocations;
 
 ObjectLocations locations[] = {
-  {dot,     0x15, 0x51, 0x12, 1,  1,  0, 6},   // Black dot
-  {drag0,   0x09, 0x50, 0x20, 8,  16, 0, 3},   // Red dragon
-  {drag0,   0x01, 0x50, 0x20, 8,  16, 0, 2},   // Yellow dragon
-  {drag0,   0x1D, 0x50, 0x50, 8,  16, 0, 4},   // Green dragon
-  {magnet,  0x1B, 0x80, 0x20, 8,  4,  0, 6},   // Magnet
-  {sword,   0x12, 0x20, 0x60, 8,  4,  0, 2},   // Sword
-  {chalice, 0x1C, 0x30, 0x20, 8,  4,  0, 2},   // Chalice
-  {bridge,  0x04, 0x29, 0x67, 16, 16, 0, 1},   // Bridge
-  {key,     0x11, 0x20, 0x50, 8,  4,  0, 2},   // Yellow key
-  {key,     0x0E, 0x20, 0x40, 8,  4,  0, 7},   // White key
-  {key,     0x1D, 0x20, 0x20, 8,  4,  0, 6}    // Black key
+  {dot,     0x15, 0x51, 0x12, 1,  1,  0, 6, 0},   // Black dot
+  {drag0,   0x09, 0x50, 0x20, 8,  44, 0, 3, 2},   // Red dragon
+  {drag0,   0x01, 0x50, 0x20, 8,  44, 0, 2, 2},   // Yellow dragon
+  {drag0,   0x1D, 0x50, 0x50, 8,  44, 0, 4, 2},   // Green dragon
+  {magnet,  0x1B, 0x80, 0x20, 8,  8,  0, 6, 0},   // Magnet
+  {sword,   0x12, 0x20, 0x60, 8,  5,  0, 2, 0},   // Sword
+  {chalice, 0x1C, 0x30, 0x20, 8,  9,  0, 2, 0},   // Chalice
+  {bridge,  0x04, 0x29, 0x67, 32, 48, 0, 1, 1},   // Bridge
+  {key,     0x11, 0x20, 0x50, 8,  3,  0, 2, 0},   // Yellow key
+  {key,     0x0E, 0x20, 0x40, 8,  3,  0, 7, 0},   // White key
+  {key,     0x1D, 0x20, 0x20, 8,  3,  0, 6, 0}    // Black key
 };
 
 // Working data 
@@ -736,31 +737,31 @@ void draw_ball(uint8_t x, uint8_t y, uint16_t c) {
 }
 
 // Draw object
-void draw_object(uint8_t x, uint8_t y, uint16_t oc, const uint8_t *d, bool big) {
-  uint8_t shift = (big ? 3 : 1);
+void draw_object(uint8_t x, uint8_t y, uint16_t oc, const uint8_t *d, uint8_t size) {
+  uint8_t shift = (size == 1 ? 3 : 1);
   while(*d) {
     uint8_t c = *d;
     for(int i=0;i<8;i++) {
-      for(int j=0;(c & 0x80) && j<(big ? 8 : 2);j++) 
-        for(int k=0; k<(big ? 2 : 1) && y + k  < 192;k++) 
+      for(int j=0;(c & 0x80) && j<(size == 1 ? 8 : 2);j++) 
+        for(int k=0; k<(size> 0 ? 2 : 1) && y + k  < 192;k++) 
           lcd_draw_pixel((x<<1) + (i<<shift) + j, Y_OFFSET + y + k, oc);
       c <<= 1;
     }
     d++;
-    y += (big ? 2 : 1);;
+    y += (size > 0 ? 2 : 1);;
   }
 }
 
 // Draw object
-void undraw_object(uint8_t x, uint8_t y, const uint8_t *d, bool big) {
-  uint8_t shift = (big ? 3 : 1);
+void undraw_object(uint8_t x, uint8_t y, const uint8_t *d, uint8_t size) {
+  uint8_t shift = (size == 1 ? 3 : 1);
   uint16_t room_color = colors[rooms[current_room].color];
 
   while(*d) {
     uint8_t c = *d;
     for(int i=0;i<8;i++) {
-      for(int j=0;(c & 0x80) && j<(big ? 8 : 2);j++) 
-        for(int k=0; k<(big ? 2 : 1) && y + k  < 192;k++) {
+      for(int j=0;(c & 0x80) && j<(size == 1 ? 8 : 2);j++) 
+        for(int k=0; k<(size > 0 ? 2 : 1) && y + k  < 192;k++) {
           uint16_t xx = (x<<1) + (i<<shift) + j;
           uint8_t yy = y + k;
           bool pix = get_pixel(current_room, xx >> 1, yy);
@@ -771,7 +772,7 @@ void undraw_object(uint8_t x, uint8_t y, const uint8_t *d, bool big) {
       c <<= 1;
     }
     d++;
-    y += (big ? 2 : 1);;
+    y += (size > 0 ? 2 : 1);;
   }
 }
 
@@ -782,20 +783,20 @@ void draw_objects() {
 
     if (current_room == loc.room && loc.state != CARRIED)
       draw_object(loc.x, loc.y, colors[loc.color],
-                  loc.data, i == BRIDGE);
+                  loc.data, loc.size);
   }
 }
 
 // Draw rung of portcullis
 void draw_portcullis(int n) {
   for(int i=0;i<n;i++)
-    draw_object(76, Y_OFFSET + 88 + (i<<1), 0, portcullis, false); 
+    draw_object(76, Y_OFFSET + 88 + (i<<1), 0, portcullis, 0); 
 }
 
 // Animate opening of portcullis
 void open_portcullis() {
   for(int i=15; i>=0; i--) {
-    draw_object(76, Y_OFFSET + 88 + (i<<1), back_color, portcullis, false); 
+    draw_object(76, Y_OFFSET + 88 + (i<<1), back_color, portcullis, 0); 
     delay(50);
   }
 }
@@ -882,7 +883,7 @@ void move_dragon(uint8_t obj) {
 
   if (loc.state == DEAD) return;
 
-  draw_object(loc.x, loc.y, back_color, drag0, false);
+  draw_object(loc.x, loc.y, back_color, drag0, loc.size);
 
   if (ball_x > loc.x) loc.x++;
   else if (ball_x < loc.x) loc.x--;
@@ -890,7 +891,7 @@ void move_dragon(uint8_t obj) {
   if (ball_y > loc.y) loc.y++;
   else if (ball_y < loc.y) loc.y--;
 
-  draw_object(loc.x, loc.y, colors[loc.color], drag0, false);
+  draw_object(loc.x, loc.y, colors[loc.color], drag0, loc.size);
 }
 
 // Main entry point  
@@ -914,7 +915,7 @@ void main() {
 
   // Start in number room. Only level 1 currently available.
   draw_room(0);
-  draw_object(76, 96, colors[4], one, false);
+  draw_object(76, 96, colors[4], one, 0);
 
   // Main game loop
   while(true) {
@@ -955,10 +956,10 @@ void main() {
         if (++level >  3) level = 1;
 
         undraw_object(76, 96, 
-                      (old_level == 1 ? one : (old_level == 2 ? two: three)), false);
+                      (old_level == 1 ? one : (old_level == 2 ? two: three)), 0);
 
         draw_object(76, 96, colors[4], 
-                    (level == 1 ? one : (level == 2 ? two : three)), false);
+                    (level == 1 ? one : (level == 2 ? two : three)), 0);
       }
      
       continue;
@@ -1033,13 +1034,13 @@ void main() {
       ObjectLocations *locp = &locations[obj];
       // Check for killing dragon
       if (obj == GREEN_DRAGON || obj == YELLOW_DRAGON) {
-        if (carried == SWORD) {
+        if (carried == SWORD && locp->state == IN_ROOM) {
           locp->data = drag2;
           locp->state = DEAD;
           undraw_object(locp->x, locp->y,
-                      drag0, false);
+                      drag0, 0);
           draw_object(locp->x, locp->y, colors[locp->color],
-                      drag2, false);
+                      drag2, locp->size);
         } else {
           ball_x = old_ball_x;
           ball_y = old_ball_y;
@@ -1058,7 +1059,7 @@ void main() {
         // Pick up new object 
         carried = obj;
         undraw_object(locp->x, locp->y, 
-                    locp->data, false);
+                    locp->data, locp->size);
         carried_x = locp->x - ball_x;
         carried_x += (carried_x > 0 ? 1 : -1);
         carried_y = locp->y - ball_y;
@@ -1099,7 +1100,7 @@ void main() {
       if (thin_walls & 3) draw_thin_walls(thin_walls & 1);
 
       if (current_room == NAME_ROOM) 
-        draw_object(78, 0, colors[3], easter_egg, false);
+        draw_object(78, 0, colors[3], easter_egg, 2);
 
       draw_objects();
 
@@ -1115,7 +1116,7 @@ void main() {
       if (current_room == old_room) {
         if (carried >= 0)
           undraw_object(old_ball_x + carried_x, old_ball_y + carried_y, 
-                      carloc.data, false);
+                      carloc.data, carloc.size);
         draw_ball(old_ball_x, old_ball_y, back_color);
       }
 
@@ -1123,7 +1124,7 @@ void main() {
 
       if (carried >= 0) 
         draw_object(ball_x + carried_x, ball_y + carried_y, 
-                    colors[carloc.color], carloc.data, false);
+                    colors[carloc.color], carloc.data, carloc.size);
     }
   }
 }
