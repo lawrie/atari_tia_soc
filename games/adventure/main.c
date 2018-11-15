@@ -11,6 +11,7 @@
 
 #define reg_pf (*(volatile uint32_t*)0x05000010)
 #define reg_color (*(volatile uint32_t*)0x05000014)
+#define reg_room (*(volatile uint32_t*)0x05000018)
 
 #define SCREEN_WIDTH 160
 #define SCREEN_HEIGHT 192
@@ -712,33 +713,24 @@ bool get_pixel(uint8_t r, uint8_t x, uint8_t y) {
 
 void draw_room(int r) {
   Rooms room = rooms[r];
+ 
+   reg_color = (back_color << 16) | colors[room.color];
 
-  for(int i=0;i<7;i++) {
-    if (i == 0) {
-      lcd_set_window(0, 24, WIDTH-1, HEIGHT-1);
-      lcd_send_cmd(ILI9341_MEMORYWRITE);
-      reg_dc = 1;
+  for(int i=0;i<12;i++) {
+    int n = (i == 0 ? 0 : 1 + ((i-1)/2));
 
-      reg_pf = room.data[0];
-      reg_color = (back_color << 16) | colors[room.color];
-    } else {
-      int n = (i-1)*2 + 1;
-      for(int j=0;j<2 && n+j < 12;j++) {
-        lcd_set_window(0, 24 + ((n + j) << 4), WIDTH-1, HEIGHT-1);
-        lcd_send_cmd(ILI9341_MEMORYWRITE);
-        reg_dc = 1;
+    lcd_set_window(0, 24 + (i << 4), WIDTH-1, HEIGHT-1);
+    lcd_send_cmd(ILI9341_MEMORYWRITE);
+    reg_dc = 1;
 
-        reg_pf = room.data[i];
-        reg_color = (back_color << 16) | colors[room.color];
-      }
-    }
+    reg_pf = room.data[n];
+    reg_room = 5120;
   }
-
 }
 
 /*
 // Draw room
-void slow_draw(int r) {
+void draw_room(int r) {
   Rooms room = rooms[r];
 
   for(int y=0; y<7; y++) {
@@ -761,11 +753,58 @@ void slow_draw(int r) {
 }
 */
 
+void draw_ball(uint8_t x, uint8_t y, uint16_t c) {
+  lcd_set_window(2*x, Y_OFFSET + y, (2*x) + 8, Y_OFFSET + y + 8);
+  lcd_send_cmd(ILI9341_MEMORYWRITE);
+  reg_dc = 1;
+ 
+  uint8_t pixels = (y <= 184 ? 64 : (192 - y) * 8); 
+  reg_fast_xfer = (pixels << 16) | c;
+} 
+
+/*
 // Draw player (ball)
 void draw_ball(uint8_t x, uint8_t y, uint16_t c) {
   for(int i=0; i<8; i++) 
     for(int j=0;j<8 && y + j < 192;j++) 
       lcd_draw_pixel((x << 1) + i , Y_OFFSET + y + j, c);
+}
+*/
+
+void fast_draw_object(uint8_t x0, uint8_t y0, ObjectLocations loc, bool undraw) {
+  uint16_t oc = colors[loc.color];
+  uint16_t col;
+  uint16_t room_color = colors[rooms[current_room].color];
+
+  lcd_set_window(x0 << 1, 
+                 Y_OFFSET + y0, 
+                 ((x0  + loc.w) << 1) - 1, 
+                 Y_OFFSET + y0 + loc.h - 1);
+
+  lcd_send_cmd(ILI9341_MEMORYWRITE);
+  reg_dc = 1;
+
+  for(int y=0;y<loc.h;y+=(loc.size > 0 ? 2 : 1)) {
+    for(int yy=0;yy<(loc.size > 0 ? 2 : 1);yy++) {
+      uint8_t c = *loc.data;
+
+      for(int x=0;x<loc.w;x+=(loc.size == 1 ? 4 : 1)) {
+        
+        for(int xx=0;xx<(loc.size == 1 ? 8 : 2);xx++) {
+          col = (undraw ? 
+                 ((get_pixel(current_room, x0 + x + (xx >> 1), y0 + y + yy)) ?
+                   room_color : back_color) :
+                 ((c & 0x80) ? oc : back_color));
+          reg_xfer = col >> 8;
+          reg_xfer = col;
+        }
+
+        c <<= 1;
+      }
+    }
+
+    loc.data++;
+  }
 }
 
 // Draw object
@@ -784,7 +823,7 @@ void draw_object(uint8_t x, uint8_t y, uint16_t oc, const uint8_t *d, uint8_t si
   }
 }
 
-// Draw object
+// Undraw object
 void undraw_object(uint8_t x, uint8_t y, const uint8_t *d, uint8_t size) {
   uint8_t shift = (size == 1 ? 3 : 1);
   uint16_t room_color = colors[rooms[current_room].color];
@@ -814,8 +853,9 @@ void draw_objects() {
     ObjectLocations loc = locations[i];
 
     if (current_room == loc.room && loc.state != CARRIED)
-      draw_object(loc.x, loc.y, colors[loc.color],
-                  loc.data, loc.size);
+      //draw_object(loc.x, loc.y, colors[loc.color],
+      //            loc.data, loc.size);
+      fast_draw_object(loc.x, loc.y, loc, false);
   }
 }
 
@@ -919,19 +959,21 @@ int8_t check_objects() {
 
 // Move a specific dragon
 void move_dragon(uint8_t obj) {
-  ObjectLocations loc = locations[obj];
+  ObjectLocations *locp = &locations[obj];
 
-  if (loc.state == DEAD) return;
+  if (locp->state == DEAD) return;
 
-  draw_object(loc.x, loc.y, back_color, drag0, loc.size);
+  if (touched_object(locp->x, locp->y, locp->w, locp->h)) return;
 
-  if (ball_x > loc.x) loc.x++;
-  else if (ball_x < loc.x) loc.x--;
+  fast_draw_object(locp->x, locp->y, *locp, true);
 
-  if (ball_y > loc.y) loc.y++;
-  else if (ball_y < loc.y) loc.y--;
+  if (ball_x > locp->x) locp->x++;
+  else if (ball_x < locp->x) locp->x--;
 
-  draw_object(loc.x, loc.y, colors[loc.color], drag0, loc.size);
+  if (ball_y > locp->y) locp->y++;
+  else if (ball_y < locp->y) locp->y--;
+
+  fast_draw_object(locp->x, locp->y, *locp, false);
 }
 
 // Main entry point  
@@ -1012,9 +1054,9 @@ void main() {
 
     // Move dragons
     if (current_room == GREEN_DRAGON_ROOM) {
-      if (counter & 1) move_dragon(GREEN_DRAGON);
+      if ((counter & 3) == 3) move_dragon(GREEN_DRAGON);
     } else if (current_room == YELLOW_DRAGON_ROOM) {
-      if (counter & 1) move_dragon(YELLOW_DRAGON);
+      if ((counter & 3) == 3) move_dragon(YELLOW_DRAGON);
     }
 
     // Movement and collisions
@@ -1084,10 +1126,9 @@ void main() {
         if (carried == SWORD && locp->state == IN_ROOM) {
           locp->data = drag2;
           locp->state = DEAD;
-          undraw_object(locp->x, locp->y,
-                      drag0, 0);
-          draw_object(locp->x, locp->y, colors[locp->color],
-                      drag2, locp->size);
+          fast_draw_object(locp->x, locp->y, *locp, true);
+          locp->data = drag2;
+          fast_draw_object(locp->x, locp->y, *locp, false);
         } else {
           ball_x = old_ball_x;
           ball_y = old_ball_y;
@@ -1107,8 +1148,7 @@ void main() {
 
         // Pick up new object 
         carried = obj;
-        undraw_object(locp->x, locp->y, 
-                    locp->data, locp->size);
+        fast_draw_object(locp->x, locp->y, *locp, true);
         carried_x = locp->x - ball_x;
         carried_x += (carried_x > 0 ? 1 : -1);
         carried_y = locp->y - ball_y;
@@ -1164,17 +1204,19 @@ void main() {
 
       if (current_room == old_room) {
         if (carried >= 0)
-          undraw_object(old_ball_x + carried_x, old_ball_y + carried_y, 
-                      carloc.data, carloc.size);
+          fast_draw_object(old_ball_x + carried_x, old_ball_y + carried_y, 
+                      carloc, true);
         draw_ball(old_ball_x, old_ball_y, back_color);
       }
 
       draw_ball(ball_x, ball_y, room_color);
 
       if (carried >= 0) 
-        draw_object(ball_x + carried_x, ball_y + carried_y, 
-                    colors[carloc.color], carloc.data, carloc.size);
+        fast_draw_object(ball_x + carried_x, ball_y + carried_y, 
+                    carloc, false);
     }
+
+    if (carried < 0) delay(20);
   }
 }
 
