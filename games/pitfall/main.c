@@ -12,6 +12,7 @@
 #define reg_pf (*(volatile uint32_t*)0x05000010)
 #define reg_color (*(volatile uint32_t*)0x05000014)
 #define reg_room (*(volatile uint32_t*)0x05000018)
+#define reg_obj (*(volatile uint32_t*)0x0500001C)
 
 #define Y_OFFSET 24
 
@@ -46,6 +47,8 @@ const uint16_t colors[] = {
                      0xFe00, // Gold
 };
 
+#define HARRY_MIN 8
+#define HARRY_MAX 148
 
 uint8_t harry0[] = {
     0b00000000, // |        |
@@ -755,12 +758,14 @@ uint8_t c[] = {
 };
 #endif 
 
-uint32_t leaves[] = {
-    0xffffe,
-    0xffffc,
-    0x3fcfc,
-    0x07838
+uint32_t leaves[][4] = {
+    {0xfffff, 0x3cff3, 0x183c1, 0x00180},
+    {0xe7ffe, 0xc3dbc, 0x81818, 0x00000},
+    {0xfffff, 0xffe7f, 0xdbc3d, 0x81818},
+    {0xffe7f, 0xffc3f, 0xc3c3c, 0xc300c}
 };
+
+uint32_t trees[] = {0x08080, 0x02020, 0x01008, 0x00404};
 
 uint32_t pool[] = {
     0x0000F,
@@ -771,6 +776,9 @@ uint32_t pool[] = {
     0x0003F,
     0x0000F
 };
+
+uint32_t ground_pf[7];
+uint16_t pool_color;
 
 uint8_t *numbers[] = {zero, one, two, three, four, five, six, seven, eight, nine};
 
@@ -791,7 +799,7 @@ uint8_t *numbers[] = {zero, one, two, three, four, five, six, seven, eight, nine
 
 #define ID_KNEEING  0
 #define ID_RUNNING4 4
-#define ID_STANDING 5
+
 #define ID_SWINGING 6
 #define ID_CLIMBING 7
 
@@ -821,12 +829,17 @@ void start_write(int y) {
   reg_dc = 1;
 }
 
+// Draw a horizontal stripe of colour
+void draw_stripe(int y, uint16_t col, int n) {
+  start_write(y);
+  reg_pf = 0;
+  reg_color = col << 16;
+  reg_room = n;
+}
+
 // Draw the top of the screen
 void draw_top() {
-  start_write(0);
-  reg_pf = 0;
-  reg_color = colors[DARK_GREEN] << 16;
-  reg_room = 15360;
+  draw_stripe(0, colors[DARK_GREEN], 15360);
 }
 
 // draw the leaves
@@ -835,7 +848,7 @@ void draw_leaves() {
   reg_color = (colors[LIGHT_GREEN] << 16) | colors[DARK_GREEN];
 
   for(int i=0;i<4;i++) {
-    reg_pf = leaves[i];
+    reg_pf = leaves[tree_pat][i];
     reg_room = 1280;
   }
 }
@@ -843,61 +856,59 @@ void draw_leaves() {
 // draw the trees
 void draw_trees() {
   start_write(64);
-  reg_pf = 0x01010;
+  reg_pf = trees[tree_pat];
   reg_color = (colors[LIGHT_GREEN] << 16) | colors[BROWN];
   reg_room = 15360;
 }
 
 // draw the ground
-void draw_ground(bool draw_pool, uint8_t col) {
+void draw_ground() {
   start_write(112);
-  reg_color = (colors[YELLOW] << 16) | colors[col];
+  reg_color = (colors[YELLOW] << 16) | pool_color;
 
   reg_pf = 0;
   reg_room = 320;
 
-  if (draw_pool) {
-    for(int i=0;i<7;i++) {
-      reg_pf = pool[i];
-      reg_room = 640;
-    }
-  } else {
-    reg_room = 4480;
+  for(int i=0;i<7;i++) {
+    reg_pf = ground_pf[i];
+    reg_room = 640;
   }
 
   reg_pf = 0;
   reg_room = 320;
+}
 
-  reg_pf = 0;
-  reg_color = (colors[YELLOW_GREEN] << 16);
+// Draw the lower ground
+void draw_lower_ground() {
+  start_write(128);
+  reg_color = colors[YELLOW_GREEN];
+  reg_pf = (scene_type == 1 ? 0xFFF1E : (scene_type == 0 ? 0xFFFFE : 0xFFFFF));
   reg_room = 5120;
 }
 
 // draw the underground
 void draw_underground() {
-  start_write(176);
-  reg_pf = 0;
-  reg_color = (colors[YELLOW_GREEN] << 16);;
-  reg_room = 2560;
+   draw_stripe(176, colors[YELLOW_GREEN], 2560);
 }
 
-// Draw object
-void draw_object(uint8_t x, uint8_t y, uint16_t oc, 
-                 const uint8_t *d, bool flip) {
-  for(int n=0;n<16;n++) {
+void draw_object(uint8_t x0, uint8_t y0, uint16_t oc, uint16_t bc, 
+                      const uint8_t *d, bool flip) {
+  lcd_set_window(x0 << 1, Y_OFFSET + y0, (x0 << 1) + 15, Y_OFFSET + y0 + 15);
+  lcd_send_cmd(ILI9341_MEMORYWRITE);
+  reg_dc = 1;
+  reg_color = (bc << 16) |  oc;
+
+  for(int y=0;y<16;y++) {
     uint8_t c = *(d + 15);
-    for(int i=0;i<16;i++) {
-      for(int j=0;(c & (flip ? 1 : 0x80)) && j<2;j++) 
-        lcd_draw_pixel(((x + i) <<1) + j, Y_OFFSET + y, oc);
-      if (flip) c >>= 1; else c <<= 1;
-    }
+      
+    reg_obj = c | (flip ? 0x100 : 0);
+
     d--;
-    y++;
   }
 }
 
 // Draw object with two colours
-void draw_object2(uint8_t x, uint8_t y, uint16_t oc1, uint16_t oc2,
+void draw_object_2col(uint8_t x, uint8_t y, uint16_t oc1, uint16_t oc2,
                  const uint8_t *d) {
   for(int n=0;n<16;n++) {
     uint8_t c = *(d + 15);
@@ -909,6 +920,23 @@ void draw_object2(uint8_t x, uint8_t y, uint16_t oc1, uint16_t oc2,
     d--;
     y++;
   }
+}
+
+// Simple multiply
+int mult(int x, int y) {
+  int res = 0;
+
+  for(int i=0;i<x;i++) res += y;
+
+  return res;
+}
+
+// draw of undraw a block of pixels
+void draw_block(int x, int y, int w, int h, uint16_t col) {
+  lcd_set_window((x << 1), Y_OFFSET+y, (x << 1) + w - 1, Y_OFFSET + y + h - 1);
+  lcd_send_cmd(ILI9341_MEMORYWRITE);
+  reg_dc = 1;
+  reg_fast_xfer = (mult(w, h) << 16) | col;
 }
 
 // Draw Harry
@@ -928,30 +956,23 @@ void draw_harry(uint8_t x, uint8_t y, const uint8_t *d, bool flip) {
 
 // Undraw Harry
 void undraw_harry(uint8_t x, uint8_t y, const uint8_t *d, bool flip) {
-  for(int n=0;n<22;n++) {
-    int col = (n < 2 ? 1 : (n < 6 ? 9 : (n < 12 ? 5 : 0)));
-    uint8_t c = *(d + 21);
-    for(int i=0;i<16;i++) {
-      for(int j=0;(c & (flip ? 1 : 0x80)) && j<2;j++) 
-        lcd_draw_pixel(((x + i) <<1) + j, Y_OFFSET + y, 
-                       underground ? colors[BLACK] : colors[y < 112 ? 2 : 3]);
-      if (flip) c >>= 1; else c <<= 1;
-    }
-    d--;
-    y++;
-  }
+  if (!underground) draw_trees();
+  else draw_block(x, y, 16, 22, 0);
 }
 
-// Draw number
+// Draw number or letter
 void draw_number(uint8_t x, uint8_t y, uint16_t oc, 
                  const uint8_t *d, bool flip) {
+  lcd_set_window(x << 1, Y_OFFSET + y, (x << 1) + 15, Y_OFFSET + y + 7);
+  lcd_send_cmd(ILI9341_MEMORYWRITE);
+  reg_dc = 1;
+  reg_color = (colors[DARK_GREEN] << 16) | oc;
+
   for(int n=0;n<8;n++) {
     uint8_t c = *(d + (flip ? 7 : 0));
-    for(int i=0;i<8;i++) {
-      for(int j=0;(c & 0x80) && j<2;j++) 
-        lcd_draw_pixel(((x + i) <<1) + j, Y_OFFSET + y, oc);
-      c <<= 1;
-    }
+
+    reg_obj = c;
+
     d += (flip ? -1 : 1);
     y++;
   }
@@ -1012,55 +1033,27 @@ void draw_time(int x, int y, int min, int sec, uint16_t col) {
   show_two_digits(x + 30, y, sec, col);
 }
 
-// draw of undraw a block of pixels
-void draw_block(int x, int y, int w, int h, bool undraw, 
-                uint16_t col1, uint16_t col2) {
-  for(int i=0;i<w;i++)
-    for(int j=0;j<h;j++)
-      lcd_draw_pixel((x << 1) + i, Y_OFFSET + y +j,
-                     undraw ? col1 : col2);
-}
-
 // Show the remaining lives
 void show_lives(int x, int y, int lives) {
   for(int i=0;i<lives;i++) 
-    draw_block(x + i*4, y, 2, 8, false, 0, colors[WHITE]);
+    draw_block(x + i*4, y, 2, 8, colors[WHITE]);
 }
 
-// draw a hole
-void draw_hole(int x, bool undraw) {
-  draw_block(x, 117, 24, 6, undraw, colors[YELLOW], colors[BLACK]);
-  draw_block(x, 128, 24, 16, undraw, colors[YELLOW_GREEN], colors[BLACK]);
-}
-
-// draw the laddder
+// draw the ladder
 void draw_ladder(int x, bool undraw) {
-  draw_block(x, 117, 16, 6, undraw, colors[YELLOW], colors[BLACK]);
-
-  for(int n=0;n<4;n++) {
-    draw_block(x, 128 + 4*n, 16, 2, undraw, colors[YELLOW_GREEN], colors[BLACK]);
-
-    for(int i=0;i<4;i++) 
-      for(int j=0;j<4;j++) {
-        lcd_draw_pixel((x << 1) + i, Y_OFFSET + 128 + 4*n + j, 
-                       undraw ? colors[YELLOW_GREEN] : colors[BLACK]);   
-        lcd_draw_pixel((x << 1) + i + 12, Y_OFFSET + 128 + 4*n + j, 0);
-      }
-  }
-
-  for(int n=0;n<8;n++) {
-    draw_block(x+2, 144 + 4*n, 8, 2, undraw, colors[BLACK], colors[YELLOW_GREEN]);
+  for(int n=0;n<11;n++) {
+    draw_block(x+2, 132 + 4*n, 8, 2, undraw ? colors[BLACK] : colors[YELLOW_GREEN]);
   }
 }
 
 // draw a wall
 void draw_wall(int x, bool undraw) {
-  draw_object(x, 144, colors[undraw ? BLACK : RED], wall, false);
-  draw_object(x, 160, colors[undraw ? BLACK : RED], wall, false);
+  draw_object(x, 144, colors[undraw ? BLACK : RED], 0, wall, false);
+  draw_object(x, 160, colors[undraw ? BLACK : RED], 0, wall, false);
 
   for(int n=0;n<8;n++) 
     for(int i=0;i<15;i++)
-      draw_block(x, 147 + n*4, 15, 1, undraw, colors[BLACK], colors[GREY]); 
+      draw_block(x, 147 + n*4, 15, 1, undraw ? colors[BLACK] : colors[GREY]); 
 }
 
 // draw the liana
@@ -1100,12 +1093,7 @@ void main() {
   lcd_init();
   lcd_clear_screen(0);
 
-  // Draw screen
-  draw_leaves();
-
   uint8_t buttons = 0, old_buttons;
-
-  draw_vine();
 
 #ifdef copyright
   draw_copyright();
@@ -1117,7 +1105,7 @@ void main() {
 
   int h = 0;
   bool flip = false, quick_flip = false, slow_flip = false;
-  uint32_t counter = 0;
+  uint32_t frame_counter = 0;
   
   underground = false;
 
@@ -1128,10 +1116,11 @@ void main() {
 
   // Main game loop
   while(true) {
-    counter ++;
-
     // Redraw top of screen  
     draw_top();
+  
+    // Draw leaves
+    draw_leaves();
 
 #ifdef scene_number
     // Draw the scene number
@@ -1148,41 +1137,44 @@ void main() {
     show_score(20, 2, score, colors[WHITE]);
   
     // Redraw the ground and underground and trees
-    draw_ground(false, 0);
+    draw_lower_ground();
     draw_underground();
     draw_trees();
-
+    
+    // Set the default pool color and default to no pool
+    pool_color = colors[BLACK];
+    for(int i=0;i<7;i++) ground_pf[i] = 0;
+ 
+    // Draw scene-specific items
     if (scene_type < 2) { // Hole scene 
+      for(int i=1;i<6;i++) 
+        ground_pf[i] = (scene_type == HOLE3_SCENE ? 0x000E1 : 0x00001);
+      
+      draw_ground();
+
       // Draw ladder
       draw_ladder(76, false);
       
       // Draw wall, left or right
       draw_wall((scene & 0x80) ? 136 : 17, false);
     
-      // Draw holes, if hole3 scene
-      if (scene_type == HOLE3_SCENE) {
-        draw_hole(50, false);
-        draw_hole(100, false);
-      }
     } else {
-      switch (scene_type) {
-        case 2:
-          draw_ground(true, BLACK);
-          break;
-        case 4:
-          draw_ground(true, BLUE);
-          break;
+      if (scene_type == 2 || scene_type == 4) {
+        // Ensure pool of correct colour is drawn
+        for(int i=0;i<6;i++) ground_pf[i] = pool[i];
+        if (scene_type == 2) pool_color = colors[BLUE];
       }
+      
+      draw_vine();
+      draw_ground();
     }
 
-    // Draw the stationary log
-    if (object_type == 0) draw_object(124, 112, colors[YELLOW_GREEN], log1, false);
-      
     uint8_t rolling = 148;
     bool jumping = false;
+    bool got_treasure = false;
 
     // Move harry across the screen    
-    while (harry_x >= 8 && harry_x <= 148) {    
+    while (harry_x >= HARRY_MIN && harry_x <= HARRY_MAX) {    
 
       // Draw harry
       draw_harry(harry_x, (jumping ? 88 : 96) + (underground ? 56 : 0), 
@@ -1190,40 +1182,49 @@ void main() {
   
       // Draw treasure etc.
       if (scene_type == 5) {
-        if (harry_x == 124) {
+        if (harry_x == 124 && !got_treasure) {
           show_score(20, 2, score, colors[DARK_GREEN]); //undraw 
           score += 4000;
           show_score(20, 2, score, colors[WHITE]);
+          got_treasure = true;
         }
 
         // Draw the treasure
-        if (object_type == 1) draw_object(124, 112, colors[PURPLE], money_bag, false);
-        else if (object_type == 2) draw_object(124, 112, colors[PURPLE], ring, false);
-        else draw_object(124, 112, colors[GOLD], (quick_flip ? bar0 : bar1), false);
-      } else if (object_type != 0) {  
+        if (!got_treasure) {
+          if (object_type == 1) 
+            draw_object(124, 112, colors[PURPLE], colors[YELLOW], money_bag, false);
+          else if (object_type == 2) 
+                 draw_object(124, 112, colors[PURPLE], colors[YELLOW], ring, false);
+          else draw_object(124, 112, colors[GOLD], colors[YELLOW], 
+                              (quick_flip ? bar0 : bar1), false);
+        }
+      } else {  
         switch(object_type) {
           case 4:
           case 3:
             if (rolling < 112)
-              draw_object(rolling + 48, 112, colors[BROWN], 
+              draw_object(rolling + 48, 112, colors[BROWN], colors[YELLOW],
                           quick_flip ? log2 : log1, false);
           case 2:
           case 1:
             // Draw rolling log
             if (rolling < 136)
-               draw_object(rolling + 24, 112, colors[BROWN], 
+               draw_object(rolling + 24, 112, colors[BROWN], colors[YELLOW],
                            quick_flip ? log2 : log1, false);
           case 0:
-            draw_object(rolling, 112, colors[BROWN], quick_flip ? log2 : log1, false);
+            draw_object(object_type == 0 ? 124: rolling, 112, 
+                        colors[BROWN], colors[YELLOW], 
+                        quick_flip && object_type != 0 ? log2 : log1, false);
             break;
           case 6:
             // Draw the fire
-            draw_object2(124, 112, colors[RED], colors[BROWN], 
+            draw_object_2col(124, 112, colors[RED], colors[BROWN], 
                          (quick_flip ? fire0 : fire1));
             break;
           case 7:
             // Draw the cobra
-            draw_object(124, 112, colors[BLACK], (quick_flip ? cobra0 : cobra1), false );
+            draw_object(124, 112, colors[BLACK], colors[YELLOW],
+                             (quick_flip ? cobra0 : cobra1), false );
             break;
         }
       }
@@ -1231,74 +1232,49 @@ void main() {
       if (scene_type > 1) {
         // Draw the patrolling scorpion
         draw_object(slow_flip ? 103 - (harry_x & 0xf)  : 80 + (harry_x & 0xf), 
-                  160, colors[WHITE], (quick_flip ? scorpion0 : scorpion1), slow_flip);
+                  160, colors[WHITE], 0, (quick_flip ? scorpion0 : scorpion1), slow_flip);
       }
 
+      // Draw the crocodiles
+      if (scene_type == CROCO_SCENE) 
+        for(int i=0;i<3;i++) 
+          draw_object(60 + (i*20), 112, colors[DARK_GREEN], pool_color,
+                           (slow_flip ? croc0 : croc1), false);
+
       //delay(50);
+
+      if ((++frame_counter & 0xf) == 0xf) {
+        // Update the time
+        if (sec-- == 0) {
+          min--;
+          sec = 59;
+        }
+      }
+
+      // Draw the countdown timer
+      draw_block(20, 12, 100, 8, colors[DARK_GREEN]);
+      draw_time(20, 12, min, sec, colors[WHITE]);
     
       // Undraw harry
       undraw_harry(harry_x, (jumping ? 88 : 96) + (underground ? 56: 0), 
                    jumping ? harry[1] : harry[4-h], flip);
+
+      // If underground, redraw the ladder
+      if (underground && scene_type < 2 &&
+          (harry_x >= 67 && harry_x <= 83)) draw_ladder(76, false);
    
-      // Undraw treasure etc.
-      if (scene_type == TREASURE_SCENE) {
-        // Undraw the treasure
-        if (object_type == 1) draw_object(124, 112, colors[YELLOW], money_bag, false);
-        else if (object_type == 2) draw_object(124, 112, colors[YELLOW], ring, false);
-        else draw_object(124, 112, colors[YELLOW], (quick_flip ? bar0 : bar1), false);
-      } else if (object_type != 0) {  
-        switch(object_type) {
-          case 4:
-          case 3:  
-            if (rolling < 112) 
-              draw_object(rolling + 48, 112, colors[YELLOW], 
-                          quick_flip ? log2 : log1, false);
-          case 2:
-          case 1:
-            if (rolling < 136)
-              draw_object(rolling + 24, 112, colors[YELLOW], 
-                          quick_flip ? log2 : log1, false);
-          case 0:
-            draw_object(rolling, 112, colors[YELLOW], quick_flip ? log2 : log1, false);
-            // Undraw rolling log
-            break;
-          case 6:
-            // Undraw the fire
-            draw_object2(124, 112, colors[YELLOW], colors[YELLOW], 
-                         (quick_flip ? fire0 : fire1));
-            break;
-          case 7:
-            // Undraw the cobra
-            draw_object(124, 112, colors[YELLOW], (quick_flip ? cobra0 : cobra1), false );
-            break;
-        }
-      }
+      // Redraw the ground to wipe out rolling logs etc.
+      draw_ground();
 
       if (scene_type > 1) {  
         // Undraw the scorpion
-        draw_object(slow_flip ? 103 - (harry_x & 0xf) : 80 + (harry_x & 0xf), 
-                  160, colors[BLACK], (quick_flip ? scorpion0 : scorpion1), slow_flip);
+        draw_block(slow_flip ? 103 - (harry_x & 0xf) : 80 + (harry_x & 0xf), 
+                   160, 16, 16, 0);
       }
-
-      // Undraw the stationary log
-      if (object_type == 0) draw_object(124, 112, colors[YELLOW_GREEN], log1, true);
 
       quick_flip = !quick_flip;
-      rolling = (rolling <=8 ? 124 : rolling - 4);
-
-      if ((harry_x & 0xf) == 0) {
-        // Undraw the crocodiles
-        if (scene_type == CROCO_SCENE)
-          for(int i=0;i<3;i++) 
-            draw_object(60 + (i*20), 112, colors[BLUE], (slow_flip ? croc0 : croc1), false);
-
-        slow_flip = !slow_flip;
-
-        // Draw the crocodiles
-        if (scene_type == CROCO_SCENE) 
-          for(int i=0;i<3;i++) 
-            draw_object(60 + (i*20), 112, colors[BROWN], (slow_flip ? croc0 : croc1), false);
-      }
+      if ((harry_x & 0xf) == 0xf) slow_flip = !slow_flip;
+      rolling = (rolling <= 8 ? 124 : rolling - 4);
 
       // Fall down hole
       if (scene_type == 1 && !jumping) {
@@ -1307,6 +1283,9 @@ void main() {
         }
       }
 
+      // Check input
+      buttons = reg_buttons;
+ 
       // Climb down ladder
       if (scene_type < 2 && !jumping) {
         if (harry_x > 78 && harry_x < 82) {
@@ -1318,16 +1297,20 @@ void main() {
           }
         }
       }
- 
-      // Check input
-      buttons = reg_buttons;
- 
+
+      // Climb up the ladder
+      if (underground && (harry_x > 76 && harry_x < 82)) {
+        if (buttons & BUTTON_UP) underground = false;
+      }
+
+      // Change direction
       if (buttons & BUTTON_LEFT) {
         harry_dir = BACKWARDS;
       } else if (buttons & BUTTON_RIGHT) {
         harry_dir = FORWARDS;
       } 
 
+      // Start jump
       if (!jumping && (buttons & BUTTON_UP)) {
         jumping = true;
         h = 0;
@@ -1335,66 +1318,55 @@ void main() {
 
       flip = (harry_dir == BACKWARDS);
 
+      // Finish jump
       if (h++ == (jumping ? 8 : 4)) {
         h = 0;
         jumping = false;
       } 
 
+      // Move harry
       if (harry_dir == FORWARDS) harry_x++;
       else if (harry_dir == BACKWARDS) harry_x--;
     
       // Check for hitting wall
       if (underground) {
-        if (harry_x == ((scene & 0x80) ? 128 : 25)) {
-          harry_x += (harry_dir == FORWARDS ? -8 : 8);
+        if (scene & 0x80) {
+          if (harry_dir == FORWARDS && harry_x == 128) harry_x -= 8;
+        } else {
+          if (harry_dir == BACKWARDS && harry_x == 25) harry_x += 8;
         }
       }
     }
 
     if (scene_type < 2) { // Hole scene 
       // Undraw ladder
-      draw_ladder(77, true);
+      draw_ladder(76, true);
       
       // Undraw wall, left or right
       draw_wall((scene & 0x80) ? 136 : 17, true);
-    
-      // Undraw holes, if hole3 scene
-      if (scene_type == HOLE3_SCENE) {
-        draw_hole(50, true);
-        draw_hole(100, true);
-      } else {
-       draw_ground(false, 0);
-      }
     }
 
+    // Move to next scene
     if (harry_dir == FORWARDS) {
-      if (harry_x > 148) {
+      if (harry_x > HARRY_MAX) {
         right_scene();
         if (underground) {
           right_scene();
           right_scene();
         }
-        harry_x = 8;
+        harry_x = HARRY_MIN;
         h = 0;
       }
     } else if (harry_dir == BACKWARDS) {
-      if (harry_x < 8) {
+      if (harry_x < HARRY_MIN) {
         left_scene;
         if (underground) {
           left_scene();
           left_scene();
         }
-        harry_x = 148;
+        harry_x = HARRY_MAX;
         h = 0;
       }
-    }
-
-    underground = false;
-
-    // Update the time
-    if (sec-- == 0) {
-      min--;
-      sec = 59;
     }
   }
 }
