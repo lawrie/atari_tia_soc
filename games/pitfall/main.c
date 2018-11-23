@@ -782,7 +782,7 @@ uint16_t pool_color;
 
 uint8_t *numbers[] = {zero, one, two, three, four, five, six, seven, eight, nine};
 
-#define STOPPED 0
+#define STANDING 0
 #define FORWARDS 1
 #define BACKWARDS 2
 
@@ -805,22 +805,6 @@ uint8_t *numbers[] = {zero, one, two, three, four, five, six, seven, eight, nine
 
 uint8_t scene, scene_type, object_type, tree_pat, harry_x, harry_dir;
 bool underground;
-
-#ifdef get_pixel
-// Get 20-bit wall data for given row
-uint32_t get_background(uint8_t y) {
-  if (y < 64) return 0x00000;
-  else if (y < 112) return 0x01010;
-  else return 0x00000;
-}
- 
-// Get pixel corresponding to room co-ordinates 
-bool get_pixel(uint8_t r, uint8_t x, uint8_t y) {
-  uint32_t row = get_background(y);
-  uint32_t mask = 1 << ((x >=80 ? x-80 : 79-x) >> 2);
-  return (row & mask);
-}
-#endif
 
 // Start write a block of pixels
 void start_write(int y) {
@@ -910,15 +894,18 @@ void draw_object(uint8_t x0, uint8_t y0, uint16_t oc, uint16_t bc,
 // Draw object with two colours
 void draw_object_2col(uint8_t x, uint8_t y, uint16_t oc1, uint16_t oc2,
                  const uint8_t *d) {
+  lcd_set_window(x << 1, Y_OFFSET + y, (x << 1) + 15, Y_OFFSET + y + 15);
+  lcd_send_cmd(ILI9341_MEMORYWRITE);
+  reg_dc = 1;
+  reg_color = (colors[YELLOW] << 16) |  oc1;
+
   for(int n=0;n<16;n++) {
     uint8_t c = *(d + 15);
-    for(int i=0;i<16;i++) {
-      for(int j=0;(c & 0x80) && j<2;j++) 
-        lcd_draw_pixel(((x + i) <<1) + j, Y_OFFSET + y, n < 8 ? oc1 : oc2);
-      c <<= 1;
-    }
+
+    if (n == 8) reg_color = (colors[YELLOW] << 16) | oc2;
+    reg_obj = c;
+
     d--;
-    y++;
   }
 }
 
@@ -931,7 +918,7 @@ int mult(int x, int y) {
   return res;
 }
 
-// draw of undraw a block of pixels
+// Draw or undraw a block of pixels
 void draw_block(int x, int y, int w, int h, uint16_t col) {
   lcd_set_window((x << 1), Y_OFFSET+y, (x << 1) + w - 1, Y_OFFSET + y + h - 1);
   lcd_send_cmd(ILI9341_MEMORYWRITE);
@@ -962,18 +949,18 @@ void undraw_harry(uint8_t x, uint8_t y, const uint8_t *d, bool flip) {
 
 // Draw number or letter
 void draw_number(uint8_t x, uint8_t y, uint16_t oc, 
-                 const uint8_t *d, bool flip) {
+                 const uint8_t *d, bool vert_flip) {
   lcd_set_window(x << 1, Y_OFFSET + y, (x << 1) + 15, Y_OFFSET + y + 7);
   lcd_send_cmd(ILI9341_MEMORYWRITE);
   reg_dc = 1;
   reg_color = (colors[DARK_GREEN] << 16) | oc;
 
   for(int n=0;n<8;n++) {
-    uint8_t c = *(d + (flip ? 7 : 0));
+    uint8_t c = *(d + (vert_flip ? 7 : 0));
 
     reg_obj = c;
 
-    d += (flip ? -1 : 1);
+    d += (vert_flip ? -1 : 1);
     y++;
   }
 }
@@ -1009,7 +996,7 @@ void show_score(int x, int y, int score, uint16_t col) {
   }
 }
 
-// Display two-digit number
+// Display two-digit number with leading zeros
 void show_two_digits(int x, int y, int n, uint16_t col) {
   int s = n;
   for(int i=0; i<2; i++) {
@@ -1026,7 +1013,7 @@ void show_two_digits(int x, int y, int n, uint16_t col) {
   }
 }
 
-// draw remaining time
+// Draw remaining time
 void draw_time(int x, int y, int min, int sec, uint16_t col) {
   show_two_digits(x, y, min, col);
   draw_number(x + 20, y, col, colon, true);
@@ -1039,14 +1026,14 @@ void show_lives(int x, int y, int lives) {
     draw_block(x + i*4, y, 2, 8, colors[WHITE]);
 }
 
-// draw the ladder
+// Draw the ladder
 void draw_ladder(int x, bool undraw) {
   for(int n=0;n<11;n++) {
     draw_block(x+2, 132 + 4*n, 8, 2, undraw ? colors[BLACK] : colors[YELLOW_GREEN]);
   }
 }
 
-// draw a wall
+// Draw a wall
 void draw_wall(int x, bool undraw) {
   draw_object(x, 144, colors[undraw ? BLACK : RED], 0, wall, false);
   draw_object(x, 160, colors[undraw ? BLACK : RED], 0, wall, false);
@@ -1056,7 +1043,7 @@ void draw_wall(int x, bool undraw) {
       draw_block(x, 147 + n*4, 15, 1, undraw ? colors[BLACK] : colors[GREY]); 
 }
 
-// draw the liana
+// Draw the liana
 void draw_vine() {
   for(int y=48; y<96; y++) 
    for(int x=159; x<161;x++) 
@@ -1178,7 +1165,8 @@ void main() {
 
       // Draw harry
       draw_harry(harry_x, (jumping ? 88 : 96) + (underground ? 56 : 0), 
-                 jumping ? harry[1] : harry[4-h], flip);
+                 jumping ? harry[1] : (harry_dir == STANDING ? harry[5] : harry[4-h]), 
+                 flip);
   
       // Draw treasure etc.
       if (scene_type == 5) {
@@ -1241,7 +1229,7 @@ void main() {
           draw_object(60 + (i*20), 112, colors[DARK_GREEN], pool_color,
                            (slow_flip ? croc0 : croc1), false);
 
-      //delay(50);
+      delay(50);
 
       if ((++frame_counter & 0xf) == 0xf) {
         // Update the time
@@ -1308,7 +1296,9 @@ void main() {
         harry_dir = BACKWARDS;
       } else if (buttons & BUTTON_RIGHT) {
         harry_dir = FORWARDS;
-      } 
+      } else {
+        harry_dir = STANDING;
+      }
 
       // Start jump
       if (!jumping && (buttons & BUTTON_UP)) {
