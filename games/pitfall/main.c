@@ -14,6 +14,10 @@
 #define reg_room (*(volatile uint32_t*)0x05000018)
 #define reg_obj (*(volatile uint32_t*)0x0500001C)
 
+#define abs(x) ((x) < 0 ? - (x) : (x))
+
+#define scene_number
+
 #define Y_OFFSET 24
 
 #define DARK_GREEN 0
@@ -803,8 +807,18 @@ uint8_t *numbers[] = {zero, one, two, three, four, five, six, seven, eight, nine
 #define ID_SWINGING 6
 #define ID_CLIMBING 7
 
-uint8_t scene, scene_type, object_type, tree_pat, harry_x, harry_dir;
+#define VINE_MIN_X 42
+#define VINE_MAX_X 113
+#define VINE_MIN_Y 52
+#define VINE_MAX_Y 96
+
+uint8_t scene, scene_type, object_type, tree_pat, harry_x, harry_dir, random2;
+uint8_t vine_x, vine_y;
 bool underground;
+
+void new_random2() {
+  random2 = (random2 << 1) | ((random2 >> 7) ^ (random2 >> 6));
+}
 
 // Start write a block of pixels
 void start_write(int y) {
@@ -943,8 +957,7 @@ void draw_harry(uint8_t x, uint8_t y, const uint8_t *d, bool flip) {
 
 // Undraw Harry
 void undraw_harry(uint8_t x, uint8_t y, const uint8_t *d, bool flip) {
-  if (!underground) draw_trees();
-  else draw_block(x, y, 16, 22, 0);
+  if (underground) draw_block(x, y, 16, 22, 0);
 }
 
 // Draw number or letter
@@ -1043,11 +1056,35 @@ void draw_wall(int x, bool undraw) {
       draw_block(x, 147 + n*4, 15, 1, undraw ? colors[BLACK] : colors[GREY]); 
 }
 
+int get_vine_height(int x) {
+  if (x > 23) return 2;
+  if (x > 15) return 3;
+  if (x > 7) return 4;
+  if (x > 5) return 5;
+  if (x > 4) return 7;
+  if (x > 3) return 8;
+  if (x > 2) return 10;
+  if (x > 0) return 17;
+  return 36;
+}
+
 // Draw the liana
 void draw_vine() {
-  for(int y=48; y<96; y++) 
-   for(int x=159; x<161;x++) 
-     lcd_draw_pixel(x, Y_OFFSET+y,colors[BROWN]);
+  int max_x = (vine_x < 80 ? 79 - vine_x : vine_x - 80);
+  int y = VINE_MAX_Y - (max_x >> 1);
+  int h = get_vine_height(max_x);
+
+  if (vine_x < 80) {
+    for(int x=vine_x;x<80 && y >= VINE_MIN_Y;x++) {
+      y -= h;
+      draw_block(x, y, 4, h, colors[BROWN]);
+    }
+  } else {
+    for(int x=vine_x;x>=80 && y >= VINE_MIN_Y;x--) {
+      y -= h;
+      draw_block(x, y, 4, h, colors[BROWN]);
+    }
+  }
 }  
 
 // Set variables for new scene
@@ -1093,6 +1130,8 @@ void main() {
   int h = 0;
   bool flip = false, quick_flip = false, slow_flip = false;
   uint32_t frame_counter = 0;
+  bool swinging_right = true;
+  bool harry_swinging = false;
   
   underground = false;
 
@@ -1127,7 +1166,8 @@ void main() {
     draw_lower_ground();
     draw_underground();
     draw_trees();
-    
+    draw_leaves();
+ 
     // Set the default pool color and default to no pool
     pool_color = colors[BLACK];
     for(int i=0;i<7;i++) ground_pf[i] = 0;
@@ -1146,13 +1186,12 @@ void main() {
       draw_wall((scene & 0x80) ? 136 : 17, false);
     
     } else {
-      if (scene_type == 2 || scene_type == 4) {
+      if (scene_type >= 2 || scene_type <= 4) {
         // Ensure pool of correct colour is drawn
         for(int i=0;i<6;i++) ground_pf[i] = pool[i];
-        if (scene_type == 2) pool_color = colors[BLUE];
+        if (scene_type == 3 || scene_type == 4) pool_color = colors[BLUE];
       }
       
-      draw_vine();
       draw_ground();
     }
 
@@ -1160,13 +1199,17 @@ void main() {
     bool jumping = false;
     bool got_treasure = false;
 
+    vine_x = VINE_MIN_X;
+
     // Move harry across the screen    
     while (harry_x >= HARRY_MIN && harry_x <= HARRY_MAX) {    
 
+      if (harry_swinging) harry_x = vine_x;
+
       // Draw harry
-      draw_harry(harry_x, (jumping ? 88 : 96) + (underground ? 56 : 0), 
-                 jumping ? harry[1] : (harry_dir == STANDING ? harry[5] : harry[4-h]), 
-                 flip);
+      draw_harry(harry_x, (harry_swinging || jumping ? 88 : 96) + (underground ? 56 : 0), 
+                 harry_swinging ? harry[6] : (jumping ? harry[1] : 
+                 (harry_dir == STANDING ? harry[5] : harry[4-h])), flip);
   
       // Draw treasure etc.
       if (scene_type == 5) {
@@ -1229,6 +1272,21 @@ void main() {
           draw_object(60 + (i*20), 112, colors[DARK_GREEN], pool_color,
                            (slow_flip ? croc0 : croc1), false);
 
+      if ((scene_type >= 2 && scene_type <= 4) || scene_type == 6) {
+        draw_vine();
+        if (swinging_right) {
+          if (vine_x++ == VINE_MAX_X) {
+            vine_x = VINE_MAX_X;
+            swinging_right = false;
+          }
+        } else {
+          if (vine_x-- == VINE_MIN_X) {
+            vine_x = VINE_MIN_X;
+            swinging_right = true;
+          }
+        }
+      }
+      
       delay(50);
 
       if ((++frame_counter & 0xf) == 0xf) {
@@ -1244,6 +1302,9 @@ void main() {
       draw_time(20, 12, min, sec, colors[WHITE]);
     
       // Undraw harry
+      draw_trees();
+      draw_leaves();
+
       undraw_harry(harry_x, (jumping ? 88 : 96) + (underground ? 56: 0), 
                    jumping ? harry[1] : harry[4-h], flip);
 
@@ -1299,6 +1360,15 @@ void main() {
       } else {
         harry_dir = STANDING;
       }
+
+      // Jump onto vine?
+      if ((scene_type >= 2 && scene_type <= 4) || scene_type == 6) {
+        if (vine_x >= harry_x - 8 && vine_x <= harry_x + 16) {
+          if (buttons & BUTTON_UP) harry_swinging = true;
+        }
+      }
+
+      if (buttons & BUTTON_DOWN) harry_swinging = false;
 
       // Start jump
       if (!jumping && (buttons & BUTTON_UP)) {
